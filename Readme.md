@@ -49,34 +49,6 @@ Lucidity has a single configuration file, settings.xml. This file specifies thre
 
   You can enable and disable modules simply by setting the *enabled* attribute to "true" or "false" respectively.
 
-### Creating Pages
-
-The simplest way to create a new page is to use the Page module.
-
-To create a new page using the Page module:
-
-1. Enable the Page module in settings.xml
-
-  See "Configuration" for more information about how to enable modules.
-
-2. Create a new page template
-
-  A page template is just an HTML file containing the content that you want the page to display. This file may be placed anywhere, but usually it is placed under ./templates.
-
-3. Register your page template
-
-  The page module directory (./modules/page) includes a file named templates.xml. This file is referred to as the Page Template List file and lists all of the page templates registered with Lucidity. Simply add a new entry within the templates XML element that includes a name for your template and its URL. See ./modules/page/example_templates.xml for an example.
-
-4. Validate templates.xml 
-
-  Whenever you modify an XML file, you should validate it against its XML schema. Simply use an XML validator to validate templates.xml against ./modules/page/templates.xsd.
-
-5. Visit your page
-
-  Once you have registered your page template you should now be able to view your new page. Simply enter "HOST/index.html?id=page/PAGENAME" into your browser where HOST is your site's host name and PAGENAME is the name you entered in templates.xml. For example "www.example.org/index.html?page/Example_Page".
-
-Note: your page template's internal name must not contain any spaces (use underscores instead) and should avoid any special characters that are not allowed in URLs. 
-
 ### Using Blocks
 
 Page templates can include blocks. Blocks are HTML elements that instruct Lucidity to perform special actions. This action might simply replace the block with a new HTML element or it might do something more abstract.
