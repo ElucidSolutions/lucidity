@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<indicies>
+  <index>
+    <name>Example Index</name>
+    <fields>
+      <field>id</field>
+      <field>title</field>
+      <field>type</field>
+      <field>body</field>
+    </fields>
+    <entries>
+      <entry>
+        <fields>
+          <field name="id">eoffer_emod</field>
+          <field name="title"><![CDATA[eOffer/eMod Help Center]]></field>
+          <field name="body"><![CDATA[Welcome Welcome to the eOffer/eMod User Help Center!]]></field>
+        </fields>
+        <result><![CDATA[<p>This is a search result.</p>]]></result>
+      </entry>
+    </entries>
+  </index>
+</indicies>
