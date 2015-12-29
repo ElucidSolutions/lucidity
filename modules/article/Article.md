@@ -67,7 +67,7 @@ The module's load event handler:
           });
 
           // V. Register the page handlers.
-          registerPageHandler ('article_article_page_block', 'modules/article/templates/article_page.html');
+          registerPageHandler ('article_article_page', 'modules/article/templates/article_page.html');
         },
         failure
       );
@@ -179,7 +179,7 @@ function article_parseArticles (doc) {
   represents the article described by the string.
 */
 function article_parseArticle (articleElement) {
-  var id = new URI ('article_article_page_block')
+  var id = new URI ('article_article_page')
     .segmentCoded ($('> id', articleElement).text ())
     .toString ();
 
@@ -529,7 +529,6 @@ The page handler loads the page template in templates/article_page.html. By defa
   <div id="body">
     <div class="article_article_block"><span class="core_id_block"/></div>
   </div>
-  <div id="footer"></div>
 </div>
 ```
 ### Module Settings
@@ -539,7 +538,7 @@ The module settings file is named settings.xml by default. Currently, it simply 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <settings>
-  <articles>modules/article/example_articles.xml</articles>
+  <articles>modules/article/example_database.xml</articles>
 </settings>
 ```
 
@@ -563,7 +562,7 @@ Every valid module settings file must conform to the following XML schema. This 
 
 ### Articles Database
 
-By default the articles database is stored in a file named articles.xml. An example is stored in [example_articles.xml](#Articles Database "save:") by default.
+By default the articles database is stored in a file named database.xml. An example is stored in [example_database.xml](#Articles Database "save:") by default.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
