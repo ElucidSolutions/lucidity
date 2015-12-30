@@ -31,7 +31,7 @@ Both the block and page handlers use template files. The block handler template 
 <div>
   <h2>Example Block</h2>
   <p>This element was inserted by the Example block handler.</p>
-  <a href="index.html?id=example_page">Example Page</a>
+  <a href="index.html#example_page">Example Page</a>
 </div>
 ```
 
