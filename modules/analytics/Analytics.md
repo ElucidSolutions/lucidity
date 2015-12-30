@@ -157,7 +157,7 @@ Analytics Settings Documents must conform to the following XML schema. This sche
 
 ## Example Settings.xml
 
-An example settings.xml file is presented below:
+An example settings.xml file is presented below. This example can be found here: [settings.xml.example](#Example Settings.xml "save:").
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>           

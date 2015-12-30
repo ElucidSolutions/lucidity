@@ -723,39 +723,38 @@ function video_library_highlightTranscriptElement (transcriptElement, time) {
 }
 ```
 
-Video Library Documents
------------------------
+Video Library Database
+----------------------
 
-Video libraries are defined using XML documents. These documents list the videos contained within a library hierarchically. An example library document can be found here: [example/example_library.xml](#Video Libra
+Video libraries are defined using XML documents. These documents list the videos contained within a library hierarchically. An example library document can be found here: [database.xml.example](#Video Library Database "save:").
 
 ```xml
 <?xml version="1.0" encoding="utf-8" ?>
-<library>
-  <title>Example Video Library</title>
-  <description>This is an example video library.</description>
-  <collection>
-    <title>Example Video Collection</title>
-    <description>This is an example video collection.</description>
-    <video>
-      <title>First Example Video</title>
-      <description>This is an example video.</description>
-      <duration>00:01:00</duration>
-      <url>modules/video/files/example.mp4</url>
-    </video>
-    <video>
-      <title>Second Example Video</title>
-      <description>This is another example video.</description>
-      <duration>00:35:16.5</duration>
-      <url>modules/video/files/example2.ogv</url>
-    </video>
-  </collection>
-</library>
+<database>
+  <library>
+    <name>example_library</name>
+    <title>Example Library</title>
+    <description>This is an example library.</description>
+    <collection>
+      <name>example_collection</name>
+      <title>Example Collection</title>
+      <description>This is an example collection.</description>
+      <video>
+	<title>Example Video</title>
+	<description><![CDATA[This is an example video.]]></description>
+	<duration>00:00:00</duration>
+	<url>http://example/video.mp4</url>
+        <transcript>example/transcript.xml</transcript>
+      </video>
+    </collection>
+  </library>
+</database>
 ```
 
-The Video Library Document Schema
+The Video Library Database Schema
 ---------------------------------
 
-Video Library Documents must conform to the following XML schema. The schema can be found here: [library.xsd](#The Video Library Document Schema "save:").
+Video Library Documents must conform to the following XML schema. The schema can be found here: [database.xsd](#The Video Library Database Schema "save:").
 
 ```xml
 <?xml version="1.0" encoding="utf-8" ?>

@@ -533,7 +533,7 @@ The page handler loads the page template in templates/article_page.html. By defa
 ```
 ### Module Settings
 
-The module settings file is named settings.xml by default. Currently, it simply specifies the location of the Articles Database file. An example is stored in [example_settings.xml](#Module Settings "save:") by default.
+The module settings file is named settings.xml by default. Currently, it simply specifies the location of the Articles Database file. An example is stored in [settings.xml.example](#Module Settings "save:") by default.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -562,7 +562,7 @@ Every valid module settings file must conform to the following XML schema. This 
 
 ### Articles Database
 
-By default the articles database is stored in a file named database.xml. An example is stored in [example_database.xml](#Articles Database "save:") by default.
+By default the articles database is stored in a file named database.xml. An example is stored in [database.xml.example](#Articles Database "save:") by default.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -580,7 +580,7 @@ By default the articles database is stored in a file named database.xml. An exam
 
 ### Articles Database Schema
 
-Every valid articles database file must conform to the following XML schema which is stored in [articles.xsd](#Articles Database Schema "save:") by default.
+Every valid articles database file must conform to the following XML schema which is stored in [database.xsd](#Articles Database Schema "save:") by default.
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>

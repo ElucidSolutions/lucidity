@@ -739,15 +739,27 @@ The Search module defines a page handler. This page handler accepts a Search Id 
 Example Database
 ----------------
 
+The Search Database file defines the search database and its indicies. An example database file can be found here: [database.xml.example](#Example Database "save:").
+
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <database>
   <index>
-    <name>Example Index</name>
-    <lunr>example/example.json</lunr>
-    <sets>
-      <set>example/example</set>
-    </sets>
+    <name>search</name>
+    <lunrIndexURL>data/indices/search_index.json</lunrIndexURL>
+    <setIds>
+      <setId>book_search_source/data%2Fbooks.xml</setId>
+      <setId>video_library_search_source/eoffer</setId>
+      <setId>video_library_search_source/emod</setId>
+    </setIds>
+  </index>
+  <index>
+    <name>video_search</name>
+    <lunrIndexURL>data/indices/videos_index.json</lunrIndexURL>
+    <setIds>
+      <setId>video_library_search_source/eoffer</setId>
+      <setId>video_library_search_source/emod</setId>
+    </setIds>
   </index>
 </database>
 ```
@@ -755,28 +767,37 @@ Example Database
 Database Schema
 ---------------
 
+The Search Database file is an XML file that must conform to the following XML Schema which can be found here: [database.xsd](#Database Schema "save:").
+
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
+<!-- This file defines the Search schema. -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <!-- Define the root element -->
   <xs:element name="database">
     <xs:complexType>
       <xs:sequence>
-        <xs:choice minOccurs="0" maxOccurs="unbounded">
-          <xs:element name="index" type="indexType"/>
-        </xs:choice>
+        <xs:element name="index" type="indexType" minOccurs="0" maxOccurs="unbounded"/>
       </xs:sequence>
     </xs:complexType>
     <xs:unique name="uniqueIndexName">
-      <xs:selector xpath="index|compositeIndex"/>
+      <xs:selector xpath="index"/>
       <xs:field xpath="name"/>
     </xs:unique>
   </xs:element>
 
+  <!-- Define the index element type -->
   <xs:complexType name="indexType">
     <xs:all>
       <xs:element name="name" type="xs:string"/>
-      <xs:element name="lunrIndexURL" type="xs:anyURL"/>
-      <xs:element name="setIds"></xs:element>
+      <xs:element name="lunrIndexURL" type="xs:anyURI" minOccurs="0"/>
+      <xs:element name="setIds">
+        <xs:complexType>
+          <xs:sequence>
+          <xs:element name="setId" type="xs:anyURI" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
     </xs:all>
   </xs:complexType>
 </xs:schema>
