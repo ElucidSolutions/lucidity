@@ -538,7 +538,7 @@ The module settings file is named settings.xml by default. Currently, it simply 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <settings>
-  <articles>modules/article/example_database.xml</articles>
+  <articles>modules/article/database.xml</articles>
 </settings>
 ```
 
