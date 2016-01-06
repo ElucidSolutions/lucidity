@@ -1,10 +1,21 @@
+Book Module
+===========
+
+The Book module defines the book content type which can be used to represent books, manuals, and other text-based materials divided into chapters, sections, and pages.
+
+```javascript
 /*
   The Book module defines the book content type
   which can be used to represent books, manuals,
   and other text-based materials divided into
   chapters, sections, and pages.
 */
+```
 
+Global Variables
+----------------
+
+```javascript
 /*
 */
 var book_DATABASE_URL = 'modules/book/database.xml';
@@ -13,6 +24,12 @@ var book_DATABASE_URL = 'modules/book/database.xml';
 */
 var book_DATABASE = {};
 
+```
+
+The Load Event Handler
+----------------------
+
+```javascript
 /*
   The module's load event handler. This function
   registers this modules block and page handlers.
@@ -45,7 +62,12 @@ var book_DATABASE = {};
   );
 
 }) ();
+```
 
+Load the Database
+-----------------
+
+```javascript
 /*
   book_loadDatabase accepts three arguments:
 
@@ -72,7 +94,12 @@ function book_loadDatabase (url, success, failure) {
     }
   });
 }
+```
 
+Parse the Database
+------------------
+
+```javascript
 /*
   book_parseDatabase accepts four arguments:
 
@@ -161,7 +188,12 @@ function book_parseContent (parent, parentPath, elements) {
       }
   });
 }
+```
 
+Block Handlers
+--------------
+
+```javascript
 /*
 */
 function book_bodyBlock (blockElement, success, failure) {
@@ -185,13 +217,23 @@ function book_labelBlock (blockElement, success, failure) {
 function book_linkBlock (blockElement, success, failure) {
   book_DATABASE.getLinkBlock (blockElement, success, failure);
 }
+```
 
+Page Handlers
+-------------
+
+```javascript
 /*
 */
 function book_page (id, success, failure) {
   book_DATABASE.getPage (id, success, failure);
 }
+```
 
+Class Definitions
+-----------------
+
+```javascript
 /*
 */
 function book_Page (parent, id, title, body) {
@@ -512,7 +554,12 @@ book_Database.prototype.getPage = function (id, success, failure) {
     failure
   );
 }
+```
 
+Auxiliary Functions
+-------------------
+
+```javascript
 /*
 */
 function book_getId (type, path) {
@@ -523,3 +570,132 @@ function book_getId (type, path) {
   });
   return uri.toString ();
 }
+```
+
+The Book Database
+-----------------
+
+The Book module stores all of its books in a central XML database called the Book Database. By default, this database is stored in a file named database.xml.
+
+The Book Database Schema
+------------------------
+
+To be considered valid, the Book Database XML file must conform to the following XML schema, which can be found in [database.xsd](#The Book Database Schema "save:").
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  This file defines the Books Database schema.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <!-- Define the root element -->
+  <xs:element name="books">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="book" type="bookType" minOccurs="0" maxOccurs="unbounded">
+          <xs:unique name="uniqueBookName">
+            <xs:selector xpath="book"/>
+            <xs:field xpath="@name"/>
+          </xs:unique>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Define the book element type -->
+  <xs:complexType name="bookType">
+    <xs:all>
+      <xs:element name="name"    type="xs:string"   minOccurs="1" maxOccurs="1"/>
+      <xs:element name="title"   type="xs:string"   minOccurs="1" maxOccurs="1"/>
+      <xs:element name="body"    type="xs:string"   minOccurs="1" maxOccurs="1"/>
+      <xs:element name="content" type="contentType" minOccurs="1" maxOccurs="1"/>
+    </xs:all>
+  </xs:complexType>
+
+  <!-- Define the content element type -->
+  <xs:complexType name="contentType">
+    <xs:choice maxOccurs="unbounded">
+      <xs:element name="section" type="sectionType" minOccurs="0"/>
+      <xs:element name="page" type="pageType" minOccurs="0"/>
+    </xs:choice>
+  </xs:complexType>
+
+  <!-- Define the section element type -->
+  <xs:complexType name="sectionType">
+    <xs:all>
+      <xs:element name="name"    type="xs:string"   minOccurs="1" maxOccurs="1"/>
+      <xs:element name="title"   type="xs:string"   minOccurs="1" maxOccurs="1"/>
+      <xs:element name="content" type="contentType" minOccurs="1" maxOccurs="1"/>
+    </xs:all> 
+  </xs:complexType>
+
+  <!-- Define the page element type -->
+  <xs:complexType name="pageType">
+    <xs:all>
+      <xs:element name="name"  type="xs:string" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="title" type="xs:string" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="body"  type="xs:string" minOccurs="1" maxOccurs="1"/>
+    </xs:all>
+  </xs:complexType>
+</xs:schema>
+
+```
+
+Database Example
+----------------
+
+The Book module includes an example database in [database.xml.example](#Database Example "save:").
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<books>
+  <book>
+    <name>example_book</name>
+    <title><![CDATA[Example Book]]></title>
+    <body><![CDATA[This is an example book]]></body>
+    <content>
+      <section>
+        <name>example_section</name>
+        <title><![CDATA[Example Section]]></title>
+        <content>
+          <page>
+            <name>example_page</name>
+            <title><![CDATA[Example Page]]></title>
+            <body><![CDATA[This is an example page.]]></body>
+          </page>
+        </content>
+    </content>
+  </book>
+</books>
+```
+
+Generating Source Files
+-----------------------
+
+You can generate the Book module's source files using [Literate Programming](https://github.com/jostylr/literate-programming), simply execute:
+`literate-programming Book.md`
+from the command line.
+
+<!---
+#### Book.js
+```
+_"Book Module"
+
+_"Global Variables"
+
+_"The Load Event Handler"
+
+_"Load the Database"
+
+_"Parse the Database"
+
+_"Block Handlers"
+
+_"Page Handlers"
+
+_"Class Definitions"
+
+_"Auxiliary Functions"
+```
+[book.js](#Book.js "save:")
+-->
