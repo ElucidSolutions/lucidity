@@ -88,7 +88,7 @@ $(document).ready (function () {
 */
 $(window).on ('hashchange', function () {
   // I. Get the resource ID.
-  var id = new URI (location.hash).fragment ();
+  var id = new URI ().fragment ();
 
   var handler = getPageHandler (id);
   if (handler) {
@@ -131,6 +131,7 @@ $(window).on ('hashchange', function () {
 */
 function loadSettings (done) {
   $.ajax (SETTINGS_URL, {
+    dataType: 'xml',
     success: function (doc) {
       done (parseSettings (doc));
     },
@@ -861,7 +862,9 @@ function getTemplate (url, success, failure) {
   $.get (url, function (html) {
     var template = $(html);
     success (template);
-  }).fail (function () {
+    },
+    'html'
+  ).fail (function () {
     strictError ('[core][getTemplate] Error: an error occured while trying to load a template from "' + url + '".');
     failure ();
   });
