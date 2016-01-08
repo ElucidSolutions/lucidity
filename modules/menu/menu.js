@@ -13,14 +13,11 @@
 
 /*
 */
-function menu_Element (id, title) {
-  this.id    = id;
-  this.title = title;
+function menu_Element (parent, id, title) {
+  this.parent = parent;
+  this.id     = id;
+  this.title  = title;
 }
-
-/*
-*/
-// menu_Element.prototype.getParent = function (success, failure) {}
 
 /*
 */
@@ -28,79 +25,53 @@ function menu_Element (id, title) {
 
 /*
 */
-// menu_Element.prototype.getFirstPage = function (success, failure) {}
+// menu_Element.prototype.getFirstPage = function () {}
 
 /*
 */
-// menu_Element.prototype.getElement = function (id, success, failure) {} 
+// menu_Element.prototype.getElement = function (id) {} 
 
 /*
 */
-// menu_Element.prototype.getLinkElement = function (success, failure) {}
+// menu_Element.prototype.getLinkElement = function () {}
 
 /*
 */
-menu_Element.prototype.getAncestors = function (success, failure) {
-  this.getParent (
-    function (parent) {
-      parent ? parent.getPath (success, failure) : success ([]);
-    },
-    failure
-  );
+menu_Element.prototype.getAncestors = function () {
+  return this.parent ? this.parent.getPath () : [];
 }
 
 /*
 */
-menu_Element.prototype.getPath = function (success, failure) {
-  var self = this;
-  this.getAncestors (
-    function (ancestors) {
-      ancestors.push (self);
-      success (ancestors);
-    },
-    failure
-  );
+menu_Element.prototype.getPath = function () {
+  var ancestors = this.getAncestors ();
+  ancestors.push (this);
+  return ancestors;
 }
 
 /*
 */
-menu_Element.prototype.getLevel = function (success, failure) {
-  var self = this;
-  this.getPath (
-    function (path) {
-      success (path.length);
-    },
-    failure
-  );
+menu_Element.prototype.getLevel = function () {
+  return this.getPath ().length;
 }
 
 /*
 */
-menu_Element.prototype.getLine = function (success, failure) {
-  this.getPath (
-    function (path) {
-      success (path.map (
-        function (element) {
-          return element.id;
-      }));
-    },
-    failure
-  );
+menu_Element.prototype.getLine = function () {
+  var line = [];
+  var path = this.getPath ();
+  for (var i = 0; i < path.length; i ++) {
+    line.push (path [i].id);
+  };
+  return line;
 }
 
 /*
 */
-menu_Element.prototype.addAttributes = function (element, success, failure) {
-  var self = this;
-  this.getLevel (
-    function (level) {
-      success (element
-        .attr ('data-menu-id', self.id)
-        .attr ('data-menu-level', level)
-      );
-    },
-    failure
-  );
+menu_Element.prototype.addAttributes = function (element) {
+  return element
+    .attr ('data-menu-id', this.id)
+    .attr ('data-menu-level', this.getLevel ());
 }
 
 /*
@@ -109,8 +80,7 @@ menu_Element.prototype.getTemplate = function (success, failure) {
   var self = this;
   this.getRawTemplate (
     function (rawTemplate) {
-      rawTemplate.addClass ('menu_template');
-      self.addAttributes (rawTemplate, success, failure);
+      success (self.addAttributes (rawTemplate).addClass ('menu_template'));
     },
     failure
   );
@@ -119,74 +89,24 @@ menu_Element.prototype.getTemplate = function (success, failure) {
 /*
 */
 menu_Element.prototype.getFullTemplate = function (success, failure) {
-  this.getPath (
-    function (path) {
-      var element = path.shift ();
-      element.getTemplate (
-        function (template) {
-          $('.menu_id_block', template).replaceWith (element.id);
-          fold (
-            function (template, nestedElement, success, failure) {
-              nestedElement.getTemplate (
-                function (nestedTemplate) {
-                  $('.menu_id_block', nestedTemplate).replaceWith (nestedElement.id);
-                  $('.menu_hole_block', template).replaceWith (nestedTemplate);
-                  success (template);
-                },
-                failure
-              );
+  var path = this.getPath ();
+  var element = path.shift ();
+  element.getTemplate (
+    function (template) {
+      fold (
+        function (template, nestedElement, success, failure) {
+          nestedElement.getTemplate (
+            function (nestedTemplate) {
+              $('.menu_id_block', nestedTemplate).replaceWith (nestedElement.id);
+              $('.menu_hole_block', template).replaceWith (nestedTemplate);
+              success (template);
             },
-            template,
-            path,
-            success,
             failure
           );
-        }
-      );
-    },
-    failure
-  )
-}
-
-/*
-*/
-menu_Element.prototype.getLabelElement = function (success, failure) {
-  this.addAttributes (
-    $('<span></span>')
-      .addClass ('menu_label')
-      .addClass ('menu_title')
-      .html (this.title),
-    success,
-    failure
-  );
-}
-
-/*
-*/
-menu_Element.prototype._getLinkElement = function (id, success, failure) {
-  this.addAttributes (
-    $('<a></a>')
-      .addClass ('menu_link')
-      .addClass ('menu_title')
-      .attr ('href', getContentURL (id))
-      .html (this.title),
-    success,
-    failure
-  );
-}
-
-/*
-*/
-menu_Element.prototype.getContentsItemElement = function (numColumns, depth, success, failure) {
-  var element = $('<li></li>').addClass ('menu_contents_item');
-
-  var self = this;
-  this.addAttributes (element,
-    function () {
-      self.getLinkElement (
-        function (linkElement) {
-          success (element.append (linkElement));
         },
+        template,
+        path,
+        success,
         failure
       );
     },
@@ -196,8 +116,38 @@ menu_Element.prototype.getContentsItemElement = function (numColumns, depth, suc
 
 /*
 */
-function menu_Page (id, title) {
-  menu_Element.call (this, id, title);
+menu_Element.prototype.getLabelElement = function () {
+  return this.addAttributes (
+    $('<span></span>')
+      .addClass ('menu_label')
+      .addClass ('menu_title')
+      .html (this.title));
+}
+
+/*
+*/
+menu_Element.prototype._getLinkElement = function (id) {
+  return this.addAttributes (
+    $('<a></a>')
+      .addClass ('menu_link')
+      .addClass ('menu_title')
+      .attr ('href', getContentURL (id))
+      .html (this.title));
+}
+
+/*
+*/
+menu_Element.prototype.getContentsItemElement = function (numColumns, depth) {
+  return this.addAttributes (
+    $('<li></li>')
+      .addClass ('menu_contents_item')
+      .append (this.getLinkElement ()));
+}
+
+/*
+*/
+function menu_Page (parent, id, title) {
+  menu_Element.call (this, parent, id, title);
 }
 
 /*
@@ -210,14 +160,14 @@ menu_Page.prototype.constructor = menu_Page;
 
 /*
 */
-menu_Page.prototype.getFirstPage = function (done) {
-  done (this);
+menu_Page.prototype.getFirstPage = function () {
+  return this;
 }
 
 /*
 */
-menu_Page.prototype.getElement = function (id, done) {
-  done (this.id === id ? this : null);
+menu_Page.prototype.getElement = function (id) {
+  return this.id === id ? this : null;
 }
 
 /*
@@ -233,41 +183,27 @@ menu_Page.prototype.getTemplate = function (success, failure) {
 
 /*
 */
-menu_Page.prototype.getLabelElement = function (success, failure) {
-  menu_Element.prototype.getLabelElement.call (this,
-    function (element) {
-      success (element.addClass ('menu_page_label'));
-    },
-    failure
-  );
+menu_Page.prototype.getLabelElement = function () {
+  return menu_Element.prototype.getLabelElement.call (this).addClass ('menu_page_label');
 }
 
 /*
 */
-menu_Page.prototype.getLinkElement = function (success, failure) {
-  menu_Element.prototype._getLinkElement.call (this, this.id,
-    function (element) {
-      success (element.addClass ('menu_page_link'));
-    },
-    failure
-  );
+menu_Page.prototype.getLinkElement = function () {
+  return menu_Element.prototype._getLinkElement.call (this, this.id).addClass ('menu_page_link');
 }
 
 /*
 */
-menu_Page.prototype.getContentsItemElement = function (numColumns, depth, success, failure) {
-  menu_Element.prototype.getContentsItemElement.call (this, numColumns, depth,
-    function (element) {
-      success (element.addClass ('menu_contents_page_item'));
-    },
-    failure
-  );
+menu_Page.prototype.getContentsItemElement = function (numColumns, depth) {
+  return menu_Element.prototype.getContentsItemElement.call (this, numColumns, depth).addClass ('menu_contents_page_item');
 }
 
 /*
 */
-function menu_Section (id, title) {
-  menu_Element.call (this, id, title);
+function menu_Section (parent, id, title, children) {
+  menu_Element.call (this, parent, id, title);
+  this.children = children;
 }
 
 /*
@@ -280,57 +216,24 @@ menu_Section.prototype.constructor = menu_Section;
 
 /*
 */
-// menu_Section.prototype.getChildren = function (success, failure) {}
+menu_Section.prototype.getElement = function (id) {
+  if (this.id === id) { return this; }
 
-/*
-*/
-menu_Section.prototype.getElement = function (id, success, failure) {
-  if (this.id === id) {
-    return success (this);
+  for (var i = 0; i < this.children.length; i ++) {
+    var element = this.children [i].getElement (id);
+    if (element) { return element; }
   }
-  this.getChildren (
-    function (children) {
-      iter (
-        function (child, next) {
-          child.getElement (id,
-            function (descendant) {
-              descendant ? success (descendant) : next ();
-            },
-            failure
-          );
-        },
-        children,
-        function () {
-          success (null);
-        }
-      );
-    },
-    failure 
-  );
+  return null;
 }
 
 /*
 */
-menu_Section.prototype.getFirstPage = function (success, failure) {
-  this.getChildren (
-    function (children) {
-      iter (
-        function (child, next) {
-          child.getFirstPage (
-            function (page) {
-              page ? success (page) : next ();
-            },
-            failure
-          );
-        },
-        children,
-        function () {
-          success (null);
-        }
-      );
-    },
-    failure
-  );
+menu_Section.prototype.getFirstPage = function () {
+  for (var i = 0; i < this.children.length; i ++) {
+    var page = this.children [i].getFirstPage ();
+    if (page) { return page; }
+  }
+  return null;
 }
 
 /*
@@ -346,86 +249,41 @@ menu_Section.prototype.getTemplate = function (success, failure) {
 
 /*
 */
-menu_Section.prototype.getLabelElement = function (success, failure) {
-  menu_Element.prototype.getLabelElement.call (this,
-    function (element) {
-      success (element.addClass ('menu_section_label'));
-    },
-    failure
-  );
+menu_Section.prototype.getLabelElement = function () {
+  return menu_Element.prototype.getLabelElement.call (this).addClass ('menu_section_label');
 }
 
 /*
 */
-menu_Section.prototype.getLinkElement = function (success, failure) {
-  var self = this;
-  this.getFirstPage (
-    function (page) {
-      if (!page) {
-        strictError ('[menu][menu_Section.getLinkElement] Error: an error occured while trying to create a new section link. The section is empty.');
-        return failure ();
-      }
-      self._getLinkElement (page.id,
-        function (element) {
-          success (element.addClass ('menu_section_link'));
-        },
-        failure
-      );
-    },
-    failure
-  );
+menu_Section.prototype.getLinkElement = function () {
+  var element = null;
+  var page = this.getFirstPage ();
+  if (page) {
+    element = menu_Element.prototype._getLinkElement.call (this, page.id);
+  } else {
+    strictError ('[menu][menu_Section.getLinkElement] Error: an error occured while trying to create a new section link. The section is empty.');
+    element = menu_Element.prototype._getLinkElement.call (this, this.id);
+  }
+  return element.addClass ('menu_section_link');
 }
 
 /*
 */
-menu_Section.prototype.getContentsItemElement = function (numColumns, depth, success, failure) {
-  var self = this;
-  menu_Page.prototype.getContentsItemElement.call (this, numColumns, depth,
-    function (element) {
-      element.addClass ('menu_section_contents_item');
-      if (depth === 0) {
-        return success (element);
-      }
-      self.getContentsElement (numColumns, depth,
-        function (contentsElement) {
-          success (element.append (contentsElement));
-        },
-        failure
-      );
-    },
-    failure
-  );
+menu_Section.prototype.getContentsItemElement = function (numColumns, depth) {
+  var element = menu_Element.prototype.getContentsItemElement.call (this, numColumns, depth).addClass ('menu_section_contents_item');
+  return depth === 0 ? element : element.append (this.getContentsElement (numColumns, depth));
 }
 
 /*
 */
-menu_Section.prototype.getContentsElement = function (numColumns, depth, success, failure) {
-  var element = $('<ol></ol>').addClass ('menu_contents');
+menu_Section.prototype.getContentsElement = function (numColumns, depth) {
+  var element = this.addAttributes ($('<ol></ol>').addClass ('menu_contents'));
+  if (depth === 0) { return element; }
 
-  var self = this;
-  this.addAttributes (element,
-    function () {
-      if (depth === 0) {
-        return success (element);
-      }
-      self.getChildren (
-        function (children) {
-          map (
-            function (child, success, failure) {
-              child.getContentsItemElement (numColumns, depth - 1, success, failure);              
-            },
-            children,
-            function (itemElements) {
-              success (element.append (menu_columnate (numColumns, itemElements)));
-            },
-            failure
-          );
-        },
-        failure
-      );
-    },
-    failure
-  );
+  for (var i = 0; i < this.children.length; i ++) {
+    element.append (this.children [i].getContentsItemElement (numColumns, depth - 1));
+  }
+  return element;
 }
 
 /*
@@ -440,37 +298,17 @@ function menu_Database () {
 /*
 */
 menu_Database.prototype.getLabelBlock = function (blockElement, success, failure) {
-  this.getElement (
-    blockElement.text (),
-    function (page) {
-      page.getLabelElement (
-        function (element) {
-          blockElement.replaceWith (element);
-          success (element);
-        },
-        failure
-      );
-    },
-    failure
-  );
+  var element = this.getElement (blockElement.text ()).getLabelElement ();
+  blockElement.replaceWith (element);
+  success (element);
 }
 
 /*
 */
 menu_Database.prototype.getLinkBlock = function (blockElement, success, failure) {
-  this.getElement (
-    blockElement.text (),
-    function (page) {
-      page.getLinkElement (
-        function (element) {
-          blockElement.replaceWith (element);
-          success (element);
-        },
-        failure
-      );
-    },
-    failure
-  );
+  var element = this.getElement (blockElement.text ()).getLinkElement ();
+  blockElement.replaceWith (element);
+  success (element);
 }
 
 /*
@@ -487,53 +325,35 @@ menu_Database.prototype.getContentsBlock = function (blockElement, success, fail
     ],
     blockElement,
     function (blockArguments) {
-      self.getElement (
-        blockArguments.menu_id,
-        function (section) {
-          section.getLine (
-            function (line) {
-              section.getContentsElement (
-                blockArguments.menu_num_columns,
-                blockArguments.menu_max_level,
-                function (element) {
-                  menu_collapse   (blockArguments.menu_expand_level + 1, element);
-                  menu_selectLine (line, element);
+      var section = self.getElement (blockArguments.menu_id);
 
-                  if (blockArguments.menu_expandable === 'true') {
-                    menu_expandLine      (line, element);
-                    menu_makeCollapsable (blockArguments.menu_expand_level + 1, element);
-                  }
+      var line = self.getElement (blockArguments.menu_selected_element_id).getLine ();
 
-                  blockElement.replaceWith (element);
-
-                  PAGE_LOAD_HANDLERS.push (
-                    function (done, id) {
-                      menu_deselect (element);
-                      self.getElement (id,
-                        function (newElement) {
-                          newElement.getLine (
-                            function (newLine) {
-                              menu_selectLine (newLine, element);
-                              menu_expandLine (newLine, element);
-                            },
-                            done
-                          );
-                        },
-                        done
-                      );
-                      done ();
-                  });
-
-                  success (element);
-                },
-                failure
-              );
-            },
-            failure
-          );
-        },
-        failure
+      var element = section.getContentsElement (
+        blockArguments.menu_num_columns,
+        blockArguments.menu_max_level
       );
+
+      menu_collapse (blockArguments.menu_expand_level + 1, element);
+      menu_selectLine (line, element);
+
+      if (blockArguments.menu_expandable === 'true') {
+        menu_expandLine      (line, element);
+        menu_makeCollapsable (blockArguments.menu_expand_level + 1, element);
+      }
+
+      blockElement.replaceWith (element);
+
+      PAGE_LOAD_HANDLERS.push (
+        function (done, id) {
+          menu_deselect (element);
+          var newLine = self.getElement (id).getLine ();
+          menu_selectLine (newLine, element);
+          menu_expandLine (newLine, element);
+          done ();
+      });
+
+      success (element);
     },
     failure
   );
@@ -575,23 +395,21 @@ function menu_collapse (level, element) {
 /*
 */
 function menu_expandLine (line, element) {
-  line.forEach (
-    function (id) {
-      var element = $('.menu_contents_item[data-menu-id="' + id + '"]', element)
-        .removeClass ('menu_collapsed');
+  for (var i = 0; i < line.length; i ++) {
+    var element = $('.menu_contents_item[data-menu-id="' + line [i] + '"]', element)
+      .removeClass ('menu_collapsed');
 
-      $('> .menu_contents', element).show ();
-  });
+    $('> .menu_contents', element).show ();
+  }
 }
 
 /*
 */
 function menu_selectLine (line, element) {
-  line.forEach (
-    function (id) {
-      var element = $('.menu_contents_item[data-menu-id="' + id + '"]', element)
-        .addClass ('menu_selected');
-  });
+  for (var i = 0; i < line.length; i ++) {
+    $('.menu_contents_item[data-menu-id="' + line [i] + '"]', element)
+      .addClass ('menu_selected');
+  }
 }
 
 /*

@@ -124,6 +124,7 @@ function book_parseDatabase (url, doc) {
 function book_parseBook (databasePath, element) {
   var path = databasePath.concat ($('> name', element).text ());
   var book = new book_Book (
+    null,
     book_getId ('book_book_page', path),
     $('> title', element).text (),
     $('> body',  element).text (),
@@ -237,8 +238,7 @@ Class Definitions
 /*
 */
 function book_Page (parent, id, title, body) {
-  menu_Page.call (this, id, title);
-  this.parent = parent;
+  menu_Page.call (this, parent, id, title);
   this.body = body;
 }
 
@@ -259,62 +259,49 @@ book_Page.prototype.constructor = book_Page;
 
 /*
 */
-book_Page.prototype.getParent = function (done) {
-  done (this.parent);
-}
-
-/*
-*/
 book_Page.prototype.getRawTemplate = function (success, failure) {
   getTemplate ('modules/book/templates/page_page.html', success, failure);
 }
 
 /*
 */
-book_Page.prototype.getBodyElement = function (success, failure) {
-  this.addAttributes ($('<div></div>').addClass ('book_body').addClass ('book_page_body').html (this.body), success, failure);
+book_Page.prototype.getBodyElement = function () {
+  return this.addAttributes (
+    $('<div></div>')
+      .addClass ('book_body')
+      .addClass ('book_page_body')
+      .html (this.body));
 }
 
 /*
 */
-book_Page.prototype.getLabelElement = function (success, failure) {
-  menu_Page.prototype.getLabelElement.call (this,
-    function (element) {
-      success (element.addClass ('book_label').addClass ('book_page_label'));
-    },
-    failure
-  );
+book_Page.prototype.getLabelElement = function () {
+  return menu_Page.prototype.getLabelElement.call (this)
+    .addClass ('book_label')
+    .addClass ('book_page_label');
 }
 
 /*
 */
 book_Page.prototype.getLinkElement = function (success, failure) {
-  menu_Page.prototype.getLinkElement.call (this,
-    function (element) {
-      success (element.addClass ('book_link').addClass ('book_page_link'));
-    },
-    failure
-  );
+  return menu_Page.prototype.getLinkElement.call (this)
+    .addClass ('book_link')
+    .addClass ('book_page_link');
 }
 
 /*
 */
-book_Page.prototype.getContentsItemElement = function (numColumns, depth, success, failure) {
-  menu_Page.prototype.getContentsItemElement.call (this, numColumns, depth,
-    function (element) {
-      success (element.addClass ('book_contents_item').addClass ('book_contents_page_item'));
-    },
-    failure
-  );
+book_Page.prototype.getContentsItemElement = function (numColumns, depth) {
+  return menu_Page.prototype.getContentsItemElement.call (this, numColumns, depth)
+    .addClass ('book_contents_item')
+    .addClass ('book_contents_page_item');
 }
 
 /*
 */
 function book_Section (parent, id, title, body, children) {
-  menu_Section.call (this, id, title)
-  this.parent   = parent;
-  this.body     = body;
-  this.children = children;
+  menu_Section.call (this, parent, id, title, children);
+  this.body = body;
 }
 
 /*
@@ -334,78 +321,57 @@ book_Section.prototype.constructor = book_Section;
 
 /*
 */
-book_Section.prototype.getParent = function (done) {
-  done (this.parent);
-}
- 
-/*
-*/
-book_Section.prototype.getChildren = function (done) {
-  done (this.children);
-}
-
-/*
-*/
 book_Section.prototype.getRawTemplate = function (success, failure) {
   getTemplate ('modules/book/templates/section_page.html', success, failure);
 }
 
 /*
 */
-book_Section.prototype.getBodyElement = function (success, failure) {
-  this.addAttributes ($('<div></div>').addClass ('book_body').addClass ('book_section_body').html (this.body), success, failure);
+book_Section.prototype.getBodyElement = function () {
+  return this.addAttributes (
+    $('<div></div>')
+      .addClass ('book_body')
+      .addClass ('book_section_body')
+      .html (this.body));
 }
 
 /*
 */
-book_Section.prototype.getLabelElement = function (success, failure) {
-  menu_Section.prototype.getLabelElement.call (this,
-    function (element) {
-      success (element.addClass ('book_label').addClass ('book_section_label'));
-    },
-    failure
-  );
+book_Section.prototype.getLabelElement = function () {
+  return menu_Section.prototype.getLabelElement.call (this)
+    .addClass ('book_label')
+    .addClass ('book_section_label');
 }
 
 /*
 */
-book_Section.prototype.getLinkElement = function (success, failure) {
-  menu_Section.prototype.getLinkElement.call (this,
-    function (element) {
-      success (element.addClass ('book_link').addClass ('book_section_link'));
-    },
-    failure
-  );
+book_Section.prototype.getLinkElement = function () {
+  return menu_Section.prototype.getLinkElement.call (this)
+    .addClass ('book_link')
+    .addClass ('book_section_link');
 }
 
 /*
 */
-book_Section.prototype.getContentsItemElement = function (numColumns, depth, success, failure) {
-  menu_Section.prototype.getContentsItemElement.call (this, numColumns, depth,
-    function (element) {
-      success (element.addClass ('book_contents_item').addClass ('book_contents_section_item'));
-    },
-    failure
-  );
+book_Section.prototype.getContentsItemElement = function (numColumns, depth) {
+  return menu_Section.prototype.getContentsItemElement.call (this, numColumns, depth)
+    .addClass ('book_contents_item')
+    .addClass ('book_contents_section_item');
 }
 
 /*
 */
-book_Section.prototype.getContentsElement = function (numColumns, depth, success, failure) {
-  menu_Section.prototype.getContentsElement.call (this, numColumns, depth,
-    function (element) {
-      success (element.addClass ('book_contents').addClass ('book_section_contents'));
-    },
-    failure
-  );
+book_Section.prototype.getContentsElement = function (numColumns, depth) {
+  return menu_Section.prototype.getContentsElement.call (this, numColumns, depth)
+    .addClass ('book_contents')
+    .addClass ('book_section_contents');
 }
 
 /*
 */
-function book_Book (id, title, body, children) {
-  menu_Section.call (this, id, title)
+function book_Book (parent, id, title, body, children) {
+  menu_Section.call (this, parent, id, title, children);
   this.body = body;
-  this.children = children;
 }
 
 /*
@@ -425,70 +391,50 @@ book_Book.prototype.constructor = book_Book;
 
 /*
 */
-book_Book.prototype.getParent = function (done) {
-  done (null);
-}
-
-/*
-*/
-book_Book.prototype.getChildren = function (done) {
-  done (this.children);
-}
-
-/*
-*/
 book_Book.prototype.getRawTemplate = function (success, failure) {
   getTemplate ('modules/book/templates/book_page.html', success, failure);
 }
 
 /*
 */
-book_Book.prototype.getBodyElement = function (success, failure) {
-  this.addAttributes ($('<div></div>').addClass ('book_body').addClass ('book_book_body').html (this.body), success, failure);
+book_Book.prototype.getBodyElement = function () {
+  return this.addAttributes (
+    $('<div></div>')
+      .addClass ('book_body')
+      .addClass ('book_book_body')
+      .html (this.body));
 }
 
 /*
 */
-book_Book.prototype.getLabelElement = function (success, failure) {
-  menu_Section.prototype.getLabelElement.call (this,
-    function (element) {
-      success (element.addClass ('book_label').addClass ('book_book_label'));
-    },
-    failure
-  );
+book_Book.prototype.getLabelElement = function () {
+  return menu_Section.prototype.getLabelElement.call (this)
+      .addClass ('book_label')
+      .addClass ('book_book_label');
 }
 
 /*
 */
-book_Book.prototype.getLinkElement = function (success, failure) {
-  menu_Section.prototype.getLinkElement.call (this,
-    function (element) {
-      success (element.addClass ('book_link').addClass ('book_book_link'));
-    },
-    failure
-  );
+book_Book.prototype.getLinkElement = function () {
+  return menu_Section.prototype.getLinkElement.call (this)
+    .addClass ('book_link')
+    .addClass ('book_book_link');
 }
 
 /*
 */
-book_Book.prototype.getContentsItemElement = function (numColumns, depth, success, failure) {
-  menu_Section.prototype.getContentsItemElement.call (this, numColumns, depth,
-    function (element) {
-      success (element.addClass ('book_contents_item').addClass ('book_contents_book_item'));
-    },
-    failure
-  );
+book_Book.prototype.getContentsItemElement = function (numColumns, depth) {
+  return menu_Section.prototype.getContentsItemElement.call (this, numColumns, depth)
+    .addClass ('book_contents_item')
+    .addClass ('book_contents_book_item');
 }
 
 /*
 */
-book_Book.prototype.getContentsElement = function (numColumns, depth, success, failure) {
-  menu_Section.prototype.getContentsElement.call (this, numColumns, depth,
-    function (element) {
-      success (element.addClass ('book_contents').addClass ('book_book_contents'));
-    },
-    failure
-  );
+book_Book.prototype.getContentsElement = function (numColumns, depth) {
+  return menu_Section.prototype.getContentsElement.call (this, numColumns, depth)
+    .addClass ('book_contents')
+    .addClass ('book_book_contents');
 }
 
 /*
@@ -508,51 +454,27 @@ book_Database.prototype.constructor = book_Database;
 
 /*
 */
-book_Database.prototype.getElement = function (id, success, failure) {
-  iter (
-    function (book, next) {
-      book.getElement (id,
-        function (element) {
-          element ? success (element) : next ();
-        },
-        failure
-      );
-    },
-    this.books,
-    function () {
-      strictError ('[book][book_Database.getElement] Error: The referenced element does not exist.');
-      failure ();
-    }
-  );
+book_Database.prototype.getElement = function (id) {
+  for (var i = 0; i < this.books.length; i ++) {
+    var element = this.books [i].getElement (id);
+    if (element) { return element; }
+  }
+  strictError ('[book][book_Database.getElement] Error: The referenced element does not exist.');
+  return null;
 }
 
 /*
 */
 book_Database.prototype.getBodyBlock = function (blockElement, success, failure) {
-  this.getElement (
-    blockElement.text (),
-    function (element) {
-      element.getBodyElement (
-        function (element) {
-          blockElement.replaceWith (element);
-          success (element);
-        },
-        failure
-      );
-    },
-    failure
-  );
+  var element = this.getElement (blockElement.text ()).getBodyElement ();
+  blockElement.replaceWith (element);
+  success (element);
 }
 
 /*
 */
 book_Database.prototype.getPage = function (id, success, failure) {
-  this.getElement (id,
-    function (element) {
-      element.getFullTemplate (success, failure);
-    },
-    failure
-  );
+  this.getElement (id).getFullTemplate (success, failure);
 }
 ```
 
