@@ -43,7 +43,7 @@ function menu_Element (parent, id, title) {
 
 /*
 */
-// menu_Element.prototype.getRawTemplate = function (success, failure) {} 
+// menu_Element.prototype.getRawPageTemplate = function (success, failure) {} 
 
 /*
 */
@@ -98,11 +98,13 @@ menu_Element.prototype.addAttributes = function (element) {
 
 /*
 */
-menu_Element.prototype.getTemplate = function (success, failure) {
+menu_Element.prototype.getPageTemplate = function (success, failure) {
   var self = this;
-  this.getRawTemplate (
+  this.getRawPageTemplate (
     function (rawTemplate) {
-      success (self.addAttributes (rawTemplate).addClass ('menu_template'));
+      success (self.addAttributes (rawTemplate)
+        .addClass ('menu_template')
+        .addClass ('menu_page_template'));
     },
     failure
   );
@@ -110,24 +112,24 @@ menu_Element.prototype.getTemplate = function (success, failure) {
 
 /*
 */
-menu_Element.prototype.getFullTemplate = function (success, failure) {
-  var path = this.getPath ();
-  var element = path.shift ();
-  element.getTemplate (
-    function (template) {
+menu_Element.prototype.getFullPageTemplate = function (success, failure) {
+  var elements = this.getPath ().reverse ();
+  var page = elements.shift ();
+  page.getPageTemplate (
+    function (pageTemplate) {
       fold (
-        function (template, nestedElement, success, failure) {
-          nestedElement.getTemplate (
-            function (nestedTemplate) {
-              $('.menu_id_block', nestedTemplate).replaceWith (nestedElement.id);
-              $('.menu_hole_block', template).replaceWith (nestedTemplate);
-              success (template);
+        function (template, section, success, failure) {
+          section.getSectionTemplate (
+            function (sectionTemplate) {
+              $('.menu_id_block', sectionTemplate).replaceWith (section.id);
+              $('.menu_hole_block', sectionTemplate).replaceWith (template);
+              success (sectionTemplate);
             },
             failure
           );
         },
-        template,
-        path,
+        pageTemplate,
+        elements,
         success,
         failure
       );
@@ -253,6 +255,10 @@ menu_Section.prototype.constructor = menu_Section;
 
 /*
 */
+menu_Section.prototype.getRawSectionTemplate = function (success, failure) {};
+
+/*
+*/
 menu_Section.prototype.getElement = function (id) {
   if (this.id === id) { return this; }
 
@@ -275,10 +281,14 @@ menu_Section.prototype.getFirstPage = function () {
 
 /*
 */
-menu_Section.prototype.getTemplate = function (success, failure) {
-  menu_Element.prototype.getTemplate.call (this,
-    function (template) {
-      success (template.addClass ('menu_section_template'));
+menu_Section.prototype.getSectionTemplate = function (success, failure) {
+  var self = this;
+  this.getRawSectionTemplate (
+    function (rawTemplate) {
+      success (
+        self.addAttributes (rawTemplate)
+          .addClass ('menu_template')
+          .addClass ('menu_section_template'));
     },
     failure
   );
@@ -293,15 +303,7 @@ menu_Section.prototype.getLabelElement = function () {
 /*
 */
 menu_Section.prototype.getLinkElement = function () {
-  var element = null;
-  var page = this.getFirstPage ();
-  if (page) {
-    element = menu_Element.prototype._getLinkElement.call (this, page.id);
-  } else {
-    strictError ('[menu][menu_Section.getLinkElement] Error: an error occured while trying to create a new section link. The section is empty.');
-    element = menu_Element.prototype._getLinkElement.call (this, this.id);
-  }
-  return element.addClass ('menu_section_link');
+  return menu_Element.prototype._getLinkElement.call (this, this.id).addClass ('menu_section_link');
 }
 
 /*
@@ -443,10 +445,10 @@ function menu_collapse (level, element) {
 */
 function menu_expandLine (line, element) {
   for (var i = 0; i < line.length; i ++) {
-    var element = $('.menu_contents_item[data-menu-id="' + line [i] + '"]', element)
-      .removeClass ('menu_collapsed');
-
-    $('> .menu_contents', element).show ();
+    $('.menu_contents_item[data-menu-id="' + line [i] + '"]', element)
+      .removeClass ('menu_collapsed')
+      .children ('.menu_contents')
+        .show ();
   }
 }
 

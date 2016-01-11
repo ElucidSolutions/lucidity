@@ -217,8 +217,8 @@ book_Page.prototype.constructor = book_Page;
 
 /*
 */
-book_Page.prototype.getRawTemplate = function (success, failure) {
-  getTemplate ('modules/book/templates/page_page.html', success, failure);
+book_Page.prototype.getRawPageTemplate = function (success, failure) {
+  getTemplate ('modules/book/templates/page_page_template.html', success, failure);
 }
 
 /*
@@ -279,8 +279,14 @@ book_Section.prototype.constructor = book_Section;
 
 /*
 */
-book_Section.prototype.getRawTemplate = function (success, failure) {
-  getTemplate ('modules/book/templates/section_page.html', success, failure);
+book_Section.prototype.getRawPageTemplate = function (success, failure) {
+  getTemplate ('modules/book/templates/section_page_template.html', success, failure);
+}
+
+/*
+*/
+book_Section.prototype.getRawSectionTemplate = function (success, failure) {
+  getTemplate ('modules/book/templates/section_section_template.html', success, failure);
 }
 
 /*
@@ -304,7 +310,15 @@ book_Section.prototype.getLabelElement = function () {
 /*
 */
 book_Section.prototype.getLinkElement = function () {
-  return menu_Section.prototype.getLinkElement.call (this)
+  var element = null;
+  var page = this.getFirstPage ();
+  if (page) {
+    element = menu_Element.prototype._getLinkElement.call (this, page.id);
+  } else {
+    strictError ('[menu][menu_Section.getLinkElement] Error: an error occured while trying to create a new section link. The section is empty.');
+    element = menu_Element.prototype._getLinkElement.call (this, this.id);
+  }
+  return element
     .addClass ('book_link')
     .addClass ('book_section_link');
 }
@@ -349,8 +363,14 @@ book_Book.prototype.constructor = book_Book;
 
 /*
 */
-book_Book.prototype.getRawTemplate = function (success, failure) {
-  getTemplate ('modules/book/templates/book_page.html', success, failure);
+book_Book.prototype.getRawPageTemplate = function (success, failure) {
+  getTemplate ('modules/book/templates/book_page_template.html', success, failure);
+}
+
+/*
+*/
+book_Book.prototype.getRawSectionTemplate = function (success, failure) {
+  getTemplate ('modules/book/templates/book_section_template.html', success, failure);
 }
 
 /*
@@ -432,7 +452,7 @@ book_Database.prototype.getBodyBlock = function (blockElement, success, failure)
 /*
 */
 book_Database.prototype.getPage = function (id, success, failure) {
-  this.getElement (id).getFullTemplate (success, failure);
+  this.getElement (id).getFullPageTemplate (success, failure);
 }
 
 /*
