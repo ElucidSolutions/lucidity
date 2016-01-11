@@ -355,10 +355,11 @@ book_Section.prototype.getLinkElement = function () {
   var element = null;
   var page = this.getFirstPage ();
   if (page) {
-    element = menu_Element.prototype._getLinkElement.call (this, page.id);
+    element = menu_Element.prototype._getLinkElement.call (this, page.id)
+      .addClass ('menu_section_link');
   } else {
     strictError ('[menu][menu_Section.getLinkElement] Error: an error occured while trying to create a new section link. The section is empty.');
-    element = menu_Element.prototype._getLinkElement.call (this, this.id);
+    element = menu_Element.prototype.getLinkElement.call (this);
   }
   return element
     .addClass ('book_link')
