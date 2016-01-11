@@ -54,13 +54,13 @@
     background-color: #f7ba77 !important;
     color: #b75513 !important;
     transition: background-color 0.25s ease 0s, color 0.25s ease 0s; }
-  .menu_contents .menu_section_link[data-menu-level="3"] {
+  .menu_contents .menu_node_link[data-menu-level="3"] {
     background: url("images/collapse.png") no-repeat 15px 14px; }
-  .menu_contents .menu_section_link[data-menu-level="4"] {
+  .menu_contents .menu_node_link[data-menu-level="4"] {
     background: url("images/navArrowCollapse.png") no-repeat 15px 14px; }
-  .menu_contents .menu_contents_item.menu_collapsed > .menu_section_link[data-menu-level="3"] {
+  .menu_contents .menu_contents_item.menu_collapsed > .menu_node_link[data-menu-level="3"] {
     background: url("images/expand.png") no-repeat 15px 14px; }
-  .menu_contents .menu_contents_item.menu_collapsed > .menu_section_link[data-menu-level="4"] {
+  .menu_contents .menu_contents_item.menu_collapsed > .menu_node_link[data-menu-level="4"] {
     background: url("images/navArrowExpand.png") no-repeat 15px 14px; }
   .menu_contents .menu_contents_item.menu_selected > .menu_link[data-menu-level="3"] {
     background-color: #ffffcc !important;

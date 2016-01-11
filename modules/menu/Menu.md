@@ -1,7 +1,7 @@
 Menu Module
 ===========
 
-The Menu module provides developers with a way to organize content into tree-like structures composed of sections and pages.
+The Menu module provides developers with a way to organize content into tree-like structures composed of nodes and leafs.
 
 The Menu module is defined by menu.js. This file defines the module's base classes, block handlers, and load event handler. The opening to this file reads.
 
@@ -9,7 +9,7 @@ The Menu module is defined by menu.js. This file defines the module's base class
 /*
   The Menu module provides developers with a way
   to organize content into tree-like structures
-  composed of sections and pages.
+  composed of nodes and leafs.
 */
 ```
 
@@ -30,7 +30,7 @@ The Menu module's Load Event Handler loads the CSS stylesheets used by the modul
 The Element Class
 -----------------
 
-The Element class defines a base class for both the Page and Section classes.
+The Element class defines a base class for both the Leaf and Node classes.
 
 ```javascript
 /*
@@ -114,14 +114,14 @@ menu_Element.prototype.getPageTemplate = function (success, failure) {
 */
 menu_Element.prototype.getFullPageTemplate = function (success, failure) {
   var elements = this.getPath ().reverse ();
-  var page = elements.shift ();
-  page.getPageTemplate (
+  var leaf = elements.shift ();
+  leaf.getPageTemplate (
     function (pageTemplate) {
       fold (
-        function (template, section, success, failure) {
-          section.getSectionTemplate (
+        function (template, node, success, failure) {
+          node.getSectionTemplate (
             function (sectionTemplate) {
-              $('.menu_id_block', sectionTemplate).replaceWith (section.id);
+              $('.menu_id_block', sectionTemplate).replaceWith (node.id);
               $('.menu_hole_block', sectionTemplate).replaceWith (template);
               success (sectionTemplate);
             },
@@ -170,44 +170,44 @@ menu_Element.prototype.getContentsItemElement = function (numColumns, depth) {
 
 ```
 
-The Page Class
+The Leaf Class
 --------------
 
-The Page class defines the basic block elements and functions for pages.
+The Leaf class defines the basic block elements and functions for leaves.
 
 ```javascript
 /*
 */
-function menu_Page (parent, id, title) {
+function menu_Leaf (parent, id, title) {
   menu_Element.call (this, parent, id, title);
 }
 
 /*
 */
-menu_Page.prototype = Object.create (menu_Element.prototype);
+menu_Leaf.prototype = Object.create (menu_Element.prototype);
 
 /*
 */
-menu_Page.prototype.constructor = menu_Page;
+menu_Leaf.prototype.constructor = menu_Leaf;
 
 /*
 */
-menu_Page.prototype.getFirstPage = function () {
+menu_Leaf.prototype.getFirstLeaf = function () {
   return this;
 }
 
 /*
 */
-menu_Page.prototype.getElement = function (id) {
+menu_Leaf.prototype.getElement = function (id) {
   return this.id === id ? this : null;
 }
 
 /*
 */
-menu_Page.prototype.getTemplate = function (success, failure) {
-  menu_Element.prototype.getTemplate.call (this,
+menu_Leaf.prototype.getPageTemplate = function (success, failure) {
+  menu_Element.prototype.getPageTemplate.call (this,
     function (template) {
-      success (template.addClass ('menu_page_template'));
+      success (template.addClass ('menu_leaf_page_template'));
     },
     failure
   );
@@ -215,51 +215,51 @@ menu_Page.prototype.getTemplate = function (success, failure) {
 
 /*
 */
-menu_Page.prototype.getLabelElement = function () {
-  return menu_Element.prototype.getLabelElement.call (this).addClass ('menu_page_label');
+menu_Leaf.prototype.getLabelElement = function () {
+  return menu_Element.prototype.getLabelElement.call (this).addClass ('menu_leaf_label');
 }
 
 /*
 */
-menu_Page.prototype.getLinkElement = function () {
-  return menu_Element.prototype._getLinkElement.call (this, this.id).addClass ('menu_page_link');
+menu_Leaf.prototype.getLinkElement = function () {
+  return menu_Element.prototype._getLinkElement.call (this, this.id).addClass ('menu_leaf_link');
 }
 
 /*
 */
-menu_Page.prototype.getContentsItemElement = function (numColumns, depth) {
-  return menu_Element.prototype.getContentsItemElement.call (this, numColumns, depth).addClass ('menu_contents_page_item');
+menu_Leaf.prototype.getContentsItemElement = function (numColumns, depth) {
+  return menu_Element.prototype.getContentsItemElement.call (this, numColumns, depth).addClass ('menu_contents_leaf_item');
 }
 ```
 
-The Section Class
+The Node Class
 -----------------
 
-Sections are pages that may contain other subsections and pages. The Section class provides a base class that can be used to represent sections.
+Nodes are elements that may contain other elements.
 
 ```javascript
 /*
 */
-function menu_Section (parent, id, title, children) {
+function menu_Node (parent, id, title, children) {
   menu_Element.call (this, parent, id, title);
   this.children = children;
 }
 
 /*
 */
-menu_Section.prototype = Object.create (menu_Element.prototype);
+menu_Node.prototype = Object.create (menu_Element.prototype);
 
 /*
 */
-menu_Section.prototype.constructor = menu_Section;
+menu_Node.prototype.constructor = menu_Node;
 
 /*
 */
-menu_Section.prototype.getRawSectionTemplate = function (success, failure) {};
+menu_Node.prototype.getRawSectionTemplate = function (success, failure) {};
 
 /*
 */
-menu_Section.prototype.getElement = function (id) {
+menu_Node.prototype.getElement = function (id) {
   if (this.id === id) { return this; }
 
   for (var i = 0; i < this.children.length; i ++) {
@@ -271,17 +271,17 @@ menu_Section.prototype.getElement = function (id) {
 
 /*
 */
-menu_Section.prototype.getFirstPage = function () {
+menu_Node.prototype.getFirstLeaf = function () {
   for (var i = 0; i < this.children.length; i ++) {
-    var page = this.children [i].getFirstPage ();
-    if (page) { return page; }
+    var leaf = this.children [i].getFirstLeaf ();
+    if (leaf) { return leaf; }
   }
   return null;
 }
 
 /*
 */
-menu_Section.prototype.getSectionTemplate = function (success, failure) {
+menu_Node.prototype.getSectionTemplate = function (success, failure) {
   var self = this;
   this.getRawSectionTemplate (
     function (rawTemplate) {
@@ -296,26 +296,26 @@ menu_Section.prototype.getSectionTemplate = function (success, failure) {
 
 /*
 */
-menu_Section.prototype.getLabelElement = function () {
-  return menu_Element.prototype.getLabelElement.call (this).addClass ('menu_section_label');
+menu_Node.prototype.getLabelElement = function () {
+  return menu_Element.prototype.getLabelElement.call (this).addClass ('menu_node_label');
 }
 
 /*
 */
-menu_Section.prototype.getLinkElement = function () {
-  return menu_Element.prototype._getLinkElement.call (this, this.id).addClass ('menu_section_link');
+menu_Node.prototype.getLinkElement = function () {
+  return menu_Element.prototype._getLinkElement.call (this, this.id).addClass ('menu_node_link');
 }
 
 /*
 */
-menu_Section.prototype.getContentsItemElement = function (numColumns, depth) {
-  var element = menu_Element.prototype.getContentsItemElement.call (this, numColumns, depth).addClass ('menu_section_contents_item');
+menu_Node.prototype.getContentsItemElement = function (numColumns, depth) {
+  var element = menu_Element.prototype.getContentsItemElement.call (this, numColumns, depth).addClass ('menu_node_contents_item');
   return depth === 0 ? element : element.append (this.getContentsElement (numColumns, depth));
 }
 
 /*
 */
-menu_Section.prototype.getContentsElement = function (numColumns, depth) {
+menu_Node.prototype.getContentsElement = function (numColumns, depth) {
   var element = this.addAttributes ($('<ol></ol>').addClass ('menu_contents'));
   if (depth === 0) { return element; }
 
@@ -369,11 +369,11 @@ menu_Database.prototype.getContentsBlock = function (blockElement, success, fail
     ],
     blockElement,
     function (blockArguments) {
-      var section = self.getElement (blockArguments.menu_id);
+      var node = self.getElement (blockArguments.menu_id);
 
       var line = self.getElement (blockArguments.menu_selected_element_id).getLine ();
 
-      var element = section.getContentsElement (
+      var element = node.getContentsElement (
         blockArguments.menu_num_columns,
         blockArguments.menu_max_level
       );
@@ -468,7 +468,7 @@ function menu_makeCollapsable (level, element) {
     function (itemElementIndex, itemElement) {
       itemElement = $(itemElement);
       if (itemElement.attr ('data-menu-level') >= level) {
-        var linkElement = $('> .menu_section_link', itemElement);
+        var linkElement = $('> .menu_node_link', itemElement);
         linkElement.click (
           function (event) {
             event.preventDefault ();
@@ -562,18 +562,18 @@ $text_gray: rgb(51, 51, 51)
   .menu_link[data-menu-level="5"]:hover
     @include navItemHover(rgb(183,85,19), rgb(247,186,119))
 
-  .menu_section_link[data-menu-level="3"]
+  .menu_node_link[data-menu-level="3"]
     background: url('images/collapse.png') no-repeat 15px 14px
 
-  .menu_section_link[data-menu-level="4"]
+  .menu_node_link[data-menu-level="4"]
     background: url('images/navArrowCollapse.png') no-repeat 15px 14px
 
   .menu_contents_item.menu_collapsed
 
-    > .menu_section_link[data-menu-level="3"]
+    > .menu_node_link[data-menu-level="3"]
       background: url('images/expand.png') no-repeat 15px 14px
       
-    > .menu_section_link[data-menu-level="4"]
+    > .menu_node_link[data-menu-level="4"]
       background: url('images/navArrowExpand.png') no-repeat 15px 14px
 
   .menu_contents_item.menu_selected
@@ -613,9 +613,9 @@ _"The Load Event Handler"
 
 _"The Element Class"
 
-_"The Page Class"
+_"The Leaf Class"
 
-_"The Section Class"
+_"The Node Class"
 
 _"The Database Class"
 

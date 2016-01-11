@@ -74,18 +74,18 @@ $text_gray: rgb(51, 51, 51)
   .menu_link[data-menu-level="5"]:hover
     @include navItemHover(rgb(183,85,19), rgb(247,186,119))
 
-  .menu_section_link[data-menu-level="3"]
+  .menu_node_link[data-menu-level="3"]
     background: url('images/collapse.png') no-repeat 15px 14px
 
-  .menu_section_link[data-menu-level="4"]
+  .menu_node_link[data-menu-level="4"]
     background: url('images/navArrowCollapse.png') no-repeat 15px 14px
 
   .menu_contents_item.menu_collapsed
 
-    > .menu_section_link[data-menu-level="3"]
+    > .menu_node_link[data-menu-level="3"]
       background: url('images/expand.png') no-repeat 15px 14px
       
-    > .menu_section_link[data-menu-level="4"]
+    > .menu_node_link[data-menu-level="4"]
       background: url('images/navArrowExpand.png') no-repeat 15px 14px
 
   .menu_contents_item.menu_selected

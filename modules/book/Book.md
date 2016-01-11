@@ -146,7 +146,6 @@ function book_parseSection (parent, parentPath, element) {
     parent,
     book_getId ('book_section_page', path),
     $('> title', element).text (),
-    $('> body',  element).text (),
     []
   );
   section.children = book_parseContent (section, path, $('> content', element).children ().toArray ());
@@ -238,7 +237,7 @@ Class Definitions
 /*
 */
 function book_Page (parent, id, title, body) {
-  menu_Page.call (this, parent, id, title);
+  menu_Leaf.call (this, parent, id, title);
   this.body = body;
 }
 
@@ -247,7 +246,7 @@ function book_Page (parent, id, title, body) {
   and set book_Element's prototype as the
   object's prototype.
 */
-book_Page.prototype = Object.create (menu_Page.prototype);
+book_Page.prototype = Object.create (menu_Leaf.prototype);
 
 /*
   Update the prototype's constructor property so
@@ -276,7 +275,7 @@ book_Page.prototype.getBodyElement = function () {
 /*
 */
 book_Page.prototype.getLabelElement = function () {
-  return menu_Page.prototype.getLabelElement.call (this)
+  return menu_Leaf.prototype.getLabelElement.call (this)
     .addClass ('book_label')
     .addClass ('book_page_label');
 }
@@ -284,7 +283,7 @@ book_Page.prototype.getLabelElement = function () {
 /*
 */
 book_Page.prototype.getLinkElement = function (success, failure) {
-  return menu_Page.prototype.getLinkElement.call (this)
+  return menu_Leaf.prototype.getLinkElement.call (this)
     .addClass ('book_link')
     .addClass ('book_page_link');
 }
@@ -292,16 +291,15 @@ book_Page.prototype.getLinkElement = function (success, failure) {
 /*
 */
 book_Page.prototype.getContentsItemElement = function (numColumns, depth) {
-  return menu_Page.prototype.getContentsItemElement.call (this, numColumns, depth)
+  return menu_Leaf.prototype.getContentsItemElement.call (this, numColumns, depth)
     .addClass ('book_contents_item')
     .addClass ('book_contents_page_item');
 }
 
 /*
 */
-function book_Section (parent, id, title, body, children) {
-  menu_Section.call (this, parent, id, title, children);
-  this.body = body;
+function book_Section (parent, id, title, children) {
+  menu_Node.call (this, parent, id, title, children);
 }
 
 /*
@@ -309,7 +307,7 @@ function book_Section (parent, id, title, body, children) {
   and set book_Element's prototype as the
   object's prototype.
 */
-book_Section.prototype = Object.create (menu_Section.prototype);
+book_Section.prototype = Object.create (menu_Node.prototype);
 
 /*
   Update the prototype's constructor property so
@@ -333,18 +331,8 @@ book_Section.prototype.getRawSectionTemplate = function (success, failure) {
 
 /*
 */
-book_Section.prototype.getBodyElement = function () {
-  return this.addAttributes (
-    $('<div></div>')
-      .addClass ('book_body')
-      .addClass ('book_section_body')
-      .html (this.body));
-}
-
-/*
-*/
 book_Section.prototype.getLabelElement = function () {
-  return menu_Section.prototype.getLabelElement.call (this)
+  return menu_Node.prototype.getLabelElement.call (this)
     .addClass ('book_label')
     .addClass ('book_section_label');
 }
@@ -353,12 +341,12 @@ book_Section.prototype.getLabelElement = function () {
 */
 book_Section.prototype.getLinkElement = function () {
   var element = null;
-  var page = this.getFirstPage ();
+  var page = this.getFirstLeaf ();
   if (page) {
     element = menu_Element.prototype._getLinkElement.call (this, page.id)
-      .addClass ('menu_section_link');
+      .addClass ('menu_node_link');
   } else {
-    strictError ('[menu][menu_Section.getLinkElement] Error: an error occured while trying to create a new section link. The section is empty.');
+    strictError ('[book][book_Section.getLinkElement] Error: an error occured while trying to create a new section link. The section is empty.');
     element = menu_Element.prototype.getLinkElement.call (this);
   }
   return element
@@ -369,7 +357,7 @@ book_Section.prototype.getLinkElement = function () {
 /*
 */
 book_Section.prototype.getContentsItemElement = function (numColumns, depth) {
-  return menu_Section.prototype.getContentsItemElement.call (this, numColumns, depth)
+  return menu_Node.prototype.getContentsItemElement.call (this, numColumns, depth)
     .addClass ('book_contents_item')
     .addClass ('book_contents_section_item');
 }
@@ -377,7 +365,7 @@ book_Section.prototype.getContentsItemElement = function (numColumns, depth) {
 /*
 */
 book_Section.prototype.getContentsElement = function (numColumns, depth) {
-  return menu_Section.prototype.getContentsElement.call (this, numColumns, depth)
+  return menu_Node.prototype.getContentsElement.call (this, numColumns, depth)
     .addClass ('book_contents')
     .addClass ('book_section_contents');
 }
@@ -385,7 +373,7 @@ book_Section.prototype.getContentsElement = function (numColumns, depth) {
 /*
 */
 function book_Book (parent, id, title, body, children) {
-  menu_Section.call (this, parent, id, title, children);
+  menu_Node.call (this, parent, id, title, children);
   this.body = body;
 }
 
@@ -394,7 +382,7 @@ function book_Book (parent, id, title, body, children) {
   and set book_Element's prototype as the
   object's prototype.
 */
-book_Book.prototype = Object.create (menu_Section.prototype);
+book_Book.prototype = Object.create (menu_Node.prototype);
 
 /*
   Update the prototype's constructor property so
@@ -429,7 +417,7 @@ book_Book.prototype.getBodyElement = function () {
 /*
 */
 book_Book.prototype.getLabelElement = function () {
-  return menu_Section.prototype.getLabelElement.call (this)
+  return menu_Node.prototype.getLabelElement.call (this)
       .addClass ('book_label')
       .addClass ('book_book_label');
 }
@@ -437,7 +425,7 @@ book_Book.prototype.getLabelElement = function () {
 /*
 */
 book_Book.prototype.getLinkElement = function () {
-  return menu_Section.prototype.getLinkElement.call (this)
+  return menu_Node.prototype.getLinkElement.call (this)
     .addClass ('book_link')
     .addClass ('book_book_link');
 }
@@ -445,7 +433,7 @@ book_Book.prototype.getLinkElement = function () {
 /*
 */
 book_Book.prototype.getContentsItemElement = function (numColumns, depth) {
-  return menu_Section.prototype.getContentsItemElement.call (this, numColumns, depth)
+  return menu_Node.prototype.getContentsItemElement.call (this, numColumns, depth)
     .addClass ('book_contents_item')
     .addClass ('book_contents_book_item');
 }
@@ -453,7 +441,7 @@ book_Book.prototype.getContentsItemElement = function (numColumns, depth) {
 /*
 */
 book_Book.prototype.getContentsElement = function (numColumns, depth) {
-  return menu_Section.prototype.getContentsElement.call (this, numColumns, depth)
+  return menu_Node.prototype.getContentsElement.call (this, numColumns, depth)
     .addClass ('book_contents')
     .addClass ('book_book_contents');
 }
