@@ -13,18 +13,52 @@ The Menu module is defined by menu.js. This file defines the module's base class
 */
 ```
 
+The Global Variables
+--------------------
+
+```javascript
+/*
+*/
+var menu_MENU = new menu_Menu ([]);
+```
+
 The Load Event Handler
 ----------------------
-
-The Menu module's Load Event Handler loads the CSS stylesheets used by the module. 
 
 ```javascript
 /*
 */
 (function () {
-  // I. Load the CSS stylesheets.
-  $.getCSS ('modules/menu/theme/menu.css');
+  // I. Register the block handlers.
+  registerBlockHandlers ({
+    menu_label_block:    menu_labelBlock,
+    menu_link_block:     menu_linkBlock,
+    menu_contents_block: menu_contentsBlock
+  });
 }) ();
+```
+
+The Block Handlers
+------------------
+
+```javascript
+/*
+*/
+function menu_labelBlock (blockElement, success, failure) {
+  menu_MENU.getLabelBlock (blockElement, success, failure);
+}
+
+/*
+*/
+function menu_linkBlock (blockElement, success, failure) {
+  menu_MENU.getLinkBlock (blockElement, success, failure);
+}
+
+/*
+*/
+function menu_contentsBlock (blockElement, success, failure) {
+  menu_MENU.getContentsBlock (blockElement, success, failure);
+}
 ```
 
 The Element Class
@@ -36,22 +70,22 @@ The Element class defines a base class for both the Leaf and Node classes.
 /*
 */
 function menu_Element (parent, id, title) {
-  this.parent = parent;
-  this.id     = id;
-  this.title  = title;
+  this.parent         = parent;
+  this.id             = id;
+  this.title          = title;
 }
 
 /*
 */
-// menu_Element.prototype.getRawPageTemplate = function (success, failure) {} 
-
-/*
-*/
-// menu_Element.prototype.getFirstPage = function () {}
+// menu_Element.prototype.getFirstLeaf = function () {}
 
 /*
 */
 // menu_Element.prototype.getElement = function (id) {} 
+
+/*
+*/
+// menu_Element.prototype.getNodeElement = function (id) {}
 
 /*
 */
@@ -98,48 +132,6 @@ menu_Element.prototype.addAttributes = function (element) {
 
 /*
 */
-menu_Element.prototype.getPageTemplate = function (success, failure) {
-  var self = this;
-  this.getRawPageTemplate (
-    function (rawTemplate) {
-      success (self.addAttributes (rawTemplate)
-        .addClass ('menu_template')
-        .addClass ('menu_page_template'));
-    },
-    failure
-  );
-} 
-
-/*
-*/
-menu_Element.prototype.getFullPageTemplate = function (success, failure) {
-  var elements = this.getPath ().reverse ();
-  var leaf = elements.shift ();
-  leaf.getPageTemplate (
-    function (pageTemplate) {
-      fold (
-        function (template, node, success, failure) {
-          node.getSectionTemplate (
-            function (sectionTemplate) {
-              $('.menu_id_block', sectionTemplate).replaceWith (node.id);
-              $('.menu_hole_block', sectionTemplate).replaceWith (template);
-              success (sectionTemplate);
-            },
-            failure
-          );
-        },
-        pageTemplate,
-        elements,
-        success,
-        failure
-      );
-    },
-    failure
-  );
-}
-
-/*
-*/
 menu_Element.prototype.getLabelElement = function () {
   return this.addAttributes (
     $('<span></span>')
@@ -162,12 +154,9 @@ menu_Element.prototype._getLinkElement = function (id) {
 /*
 */
 menu_Element.prototype.getContentsItemElement = function (numColumns, depth) {
-  return this.addAttributes (
-    $('<li></li>')
-      .addClass ('menu_contents_item')
-      .append (this.getLinkElement ()));
+  return this.addAttributes ($('<li></li>').addClass ('menu_contents_item'))
+    .append (this.getLinkElement ());
 }
-
 ```
 
 The Leaf Class
@@ -204,13 +193,8 @@ menu_Leaf.prototype.getElement = function (id) {
 
 /*
 */
-menu_Leaf.prototype.getPageTemplate = function (success, failure) {
-  menu_Element.prototype.getPageTemplate.call (this,
-    function (template) {
-      success (template.addClass ('menu_leaf_page_template'));
-    },
-    failure
-  );
+menu_Leaf.prototype.getNodeElement = function (id) {
+  return null;
 }
 
 /*
@@ -228,7 +212,8 @@ menu_Leaf.prototype.getLinkElement = function () {
 /*
 */
 menu_Leaf.prototype.getContentsItemElement = function (numColumns, depth) {
-  return menu_Element.prototype.getContentsItemElement.call (this, numColumns, depth).addClass ('menu_contents_leaf_item');
+  return menu_Element.prototype.getContentsItemElement.call (this, numColumns, depth)
+    .addClass ('menu_contents_leaf_item');
 }
 ```
 
@@ -255,15 +240,23 @@ menu_Node.prototype.constructor = menu_Node;
 
 /*
 */
-menu_Node.prototype.getRawSectionTemplate = function (success, failure) {};
-
-/*
-*/
 menu_Node.prototype.getElement = function (id) {
   if (this.id === id) { return this; }
 
   for (var i = 0; i < this.children.length; i ++) {
     var element = this.children [i].getElement (id);
+    if (element) { return element; }
+  }
+  return null;
+}
+
+/*
+*/
+menu_Node.prototype.getNodeElement = function (id) {
+  if (this.id === id) { return this; }
+
+  for (var i = 0; i < this.children.length; i ++) {
+    var element = this.children [i].getNodeElement (id);
     if (element) { return element; }
   }
   return null;
@@ -281,21 +274,6 @@ menu_Node.prototype.getFirstLeaf = function () {
 
 /*
 */
-menu_Node.prototype.getSectionTemplate = function (success, failure) {
-  var self = this;
-  this.getRawSectionTemplate (
-    function (rawTemplate) {
-      success (
-        self.addAttributes (rawTemplate)
-          .addClass ('menu_template')
-          .addClass ('menu_section_template'));
-    },
-    failure
-  );
-}
-
-/*
-*/
 menu_Node.prototype.getLabelElement = function () {
   return menu_Element.prototype.getLabelElement.call (this).addClass ('menu_node_label');
 }
@@ -303,13 +281,17 @@ menu_Node.prototype.getLabelElement = function () {
 /*
 */
 menu_Node.prototype.getLinkElement = function () {
-  return menu_Element.prototype._getLinkElement.call (this, this.id).addClass ('menu_node_link');
+  var leaf = this.getFirstLeaf ();
+  return leaf ? this._getLinkElement (leaf.id) :
+                this.getLabelElement ();
 }
 
 /*
 */
 menu_Node.prototype.getContentsItemElement = function (numColumns, depth) {
-  var element = menu_Element.prototype.getContentsItemElement.call (this, numColumns, depth).addClass ('menu_node_contents_item');
+  var element = menu_Element.prototype.getContentsItemElement.call (this, numColumns, depth)
+    .addClass ('menu_node_contents_item');
+
   return depth === 0 ? element : element.append (this.getContentsElement (numColumns, depth));
 }
 
@@ -326,22 +308,39 @@ menu_Node.prototype.getContentsElement = function (numColumns, depth) {
 }
 ```
 
-The Database Class
-------------------
+The Menu Class
+--------------
 
 ```javascript
 /*
 */
-function menu_Database () {
+function menu_Menu (children) {
+  this.children = children;
 }
 
 /*
 */
-// menu_Database.prototype.getElement = function (id, success, failure) {}
+menu_Menu.prototype.getElement = function (id) {
+  for (var i = 0; i < this.children.length; i ++) {
+    var element = this.children [i].getElement (id);
+    if (element) { return element; }
+  }
+  return null;
+}
 
 /*
 */
-menu_Database.prototype.getLabelBlock = function (blockElement, success, failure) {
+menu_Menu.prototype.getNodeElement = function (id) {
+  for (var i = 0; i < this.children.length; i ++) {
+    var element = this.children [i].getNodeElement (id);
+    if (element) { return element; }
+  }
+  return null;
+}
+
+/*
+*/
+menu_Menu.prototype.getLabelBlock = function (blockElement, success, failure) {
   var element = this.getElement (blockElement.text ()).getLabelElement ();
   blockElement.replaceWith (element);
   success (element);
@@ -349,7 +348,7 @@ menu_Database.prototype.getLabelBlock = function (blockElement, success, failure
 
 /*
 */
-menu_Database.prototype.getLinkBlock = function (blockElement, success, failure) {
+menu_Menu.prototype.getLinkBlock = function (blockElement, success, failure) {
   var element = this.getElement (blockElement.text ()).getLinkElement ();
   blockElement.replaceWith (element);
   success (element);
@@ -357,7 +356,7 @@ menu_Database.prototype.getLinkBlock = function (blockElement, success, failure)
 
 /*
 */
-menu_Database.prototype.getContentsBlock = function (blockElement, success, failure) {
+menu_Menu.prototype.getContentsBlock = function (blockElement, success, failure) {
   var self = this;
   getBlockArguments ([
       {'name': 'menu_id',                  'text': true, 'required': true},
@@ -369,9 +368,7 @@ menu_Database.prototype.getContentsBlock = function (blockElement, success, fail
     ],
     blockElement,
     function (blockArguments) {
-      var node = self.getElement (blockArguments.menu_id);
-
-      var line = self.getElement (blockArguments.menu_selected_element_id).getLine ();
+      var node = self.getNodeElement (blockArguments.menu_id);
 
       var element = node.getContentsElement (
         blockArguments.menu_num_columns,
@@ -379,11 +376,25 @@ menu_Database.prototype.getContentsBlock = function (blockElement, success, fail
       );
 
       menu_collapse (blockArguments.menu_expand_level + 1, element);
-      menu_selectLine (line, element);
 
       if (blockArguments.menu_expandable === 'true') {
-        menu_expandLine      (line, element);
-        menu_makeCollapsable (blockArguments.menu_expand_level + 1, element);
+        menu_makeCollapsable (
+          blockArguments.menu_expand_level + 1,
+          blockArguments.menu_max_level,
+          element
+        );
+      }
+
+      var leaf = self.getElement (blockArguments.menu_selected_element_id);
+      if (leaf) {
+        var line = leaf.getLine ();
+
+        menu_select     (blockArguments.menu_selected_element_id, element);
+        menu_selectLine (line, element);
+
+        if (blockArguments.menu_expandable === 'true') {
+          menu_expandLine (line, element);
+        }
       }
 
       blockElement.replaceWith (element);
@@ -391,9 +402,13 @@ menu_Database.prototype.getContentsBlock = function (blockElement, success, fail
       PAGE_LOAD_HANDLERS.push (
         function (done, id) {
           menu_deselect (element);
-          var newLine = self.getElement (id).getLine ();
-          menu_selectLine (newLine, element);
-          menu_expandLine (newLine, element);
+          var leaf = self.getElement (id);
+          if (leaf) {
+            var newLine = leaf.getLine ();
+            menu_select     (id, element);
+            menu_selectLine (newLine, element);
+            menu_expandLine (newLine, element);
+          }
           done ();
       });
 
@@ -424,8 +439,16 @@ function menu_columnate (numColumns, elements) {
 
 /*
 */
+function menu_select (id, element) {
+  $('.menu_contents_item[data-menu-id="' + id + '"]', element)
+    .addClass ('menu_selected');
+}
+
+/*
+*/
 function menu_deselect (element) {
   $('.menu_selected', element).removeClass ('menu_selected');
+  $('.menu_selected_line', element).removeClass ('menu_selected_line');
 }
 
 /*
@@ -456,18 +479,19 @@ function menu_expandLine (line, element) {
 */
 function menu_selectLine (line, element) {
   for (var i = 0; i < line.length; i ++) {
-    $('.menu_contents_item[data-menu-id="' + line [i] + '"]', element)
-      .addClass ('menu_selected');
+   $('.menu_contents_item[data-menu-id="' + line [i] + '"]', element)
+     .addClass ('menu_selected_line'); 
   }
 }
 
 /*
 */
-function menu_makeCollapsable (level, element) {
+function menu_makeCollapsable (expandLevel, maxLevel, element) {
   $('.menu_contents_item', element).each (
     function (itemElementIndex, itemElement) {
       itemElement = $(itemElement);
-      if (itemElement.attr ('data-menu-level') >= level) {
+      var level = itemElement.attr ('data-menu-level');
+      if (level >= expandLevel && level <= maxLevel) {
         var linkElement = $('> .menu_node_link', itemElement);
         linkElement.click (
           function (event) {
@@ -478,123 +502,6 @@ function menu_makeCollapsable (level, element) {
       }
   });
 }
-```
-
-The Default Stylesheet
-----------------------
-
-A set of default stylesheet ([theme/menu.sass.default](#The Default Stylesheet "save:")) is provided by the module. 
-
-```sass
-/* I. Variables */
-
-$dark_gray: rgb(178, 178, 178)
-
-$light_gray: rgb(249, 245, 242)
-
-$medium_gray: rgb(221, 221, 221)
-
-$primary-color: rgb(242,154,47)
-
-$text_gray: rgb(51, 51, 51)
-
-/* II. Mixins */
-
-@mixin navHeader()
-  background-color: $primary-color
-  color:            white
-  display:          block
-  font-weight:      300
-  padding:          10px 0px
-  text-align:       center
-
-@mixin navItem($indent)
-  display:       block
-  padding:       10px 10px 10px $indent
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2)
-
-@mixin navItemHover($color, $background_color)
-  background-color: $background_color !important
-  color:            $color !important
-  transition:       background-color 0.25s ease 0s, color 0.25s ease 0s
-
-/* III. Declarations */
-
-.menu_link
-  color:           $text_gray
-  text-decoration: none
-
-.menu_contents
-  margin:  0px
-  padding: 0px
-
-  h3
-    font-size: 1.1em
-    @include navHeader()
-
-  li
-    list-style: none
-
-  .menu_link
-    font-weight:     400
-    font-size:       .9em
-
-  .menu_link:hover
-    @include navItemHover(rgb(242,155,48), rgb(255,255,204))
-
-  .menu_link[data-menu-level="2"]
-    @include navHeader()
-
-  .menu_link[data-menu-level="3"]
-    @include navItem(40px)
-
-  .menu_link[data-menu-level="4"]
-    @include navItem(60px)
-    background: url('images/navArrow.png') no-repeat 15px 14px
-
-  .menu_link[data-menu-level="4"]:hover
-    @include navItemHover(rgb(226,118,18), rgb(254,214,176))
-
-  .menu_link[data-menu-level="5"]
-    @include navItem(80px)
-    background: url('images/navCircle.png') no-repeat 55px 18px
-
-  .menu_link[data-menu-level="5"]:hover
-    @include navItemHover(rgb(183,85,19), rgb(247,186,119))
-
-  .menu_node_link[data-menu-level="3"]
-    background: url('images/collapse.png') no-repeat 15px 14px
-
-  .menu_node_link[data-menu-level="4"]
-    background: url('images/navArrowCollapse.png') no-repeat 15px 14px
-
-  .menu_contents_item.menu_collapsed
-
-    > .menu_node_link[data-menu-level="3"]
-      background: url('images/expand.png') no-repeat 15px 14px
-      
-    > .menu_node_link[data-menu-level="4"]
-      background: url('images/navArrowExpand.png') no-repeat 15px 14px
-
-  .menu_contents_item.menu_selected
-
-    > .menu_link[data-menu-level="3"] 
-      @include navItemHover(rgb(242,155,48), rgb(255,255,204))
-
-    > .menu_link[data-menu-level="4"]
-      @include navItemHover(rgb(226,118,18), rgb(254,214,176))
-
-    > .menu_link[data-menu-level="5"]
-      @include navItemHover(rgb(183,85,19), rgb(247,186,119))
-
-.menu_contents[data-menu-level="1"] 
-  background-color: $light_gray
-
-.menu_contents[data-menu-level="3"]
-  background-color: $medium_gray
-
-.menu_contents[data-menu-level="4"]
-  background-color: $dark_gray
 ```
 
 Generating Source Files
@@ -609,7 +516,11 @@ from the command line.
 ```
 _"Menu Module"
 
+_"The Global Variables"
+
 _"The Load Event Handler"
+
+_"The Block Handlers"
 
 _"The Element Class"
 
@@ -617,7 +528,7 @@ _"The Leaf Class"
 
 _"The Node Class"
 
-_"The Database Class"
+_"The Menu Class"
 
 _"Auxiliary Functions"
 ```

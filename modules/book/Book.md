@@ -43,19 +43,22 @@ The Load Event Handler
       // II. Cache the Book database.
       book_DATABASE = database;
 
-      // III. Register the block handlers.
+      // III. Register the book templates.
+      template_registerTemplates (book_DATABASE.getTemplates ());
+
+      // IV. Register the book menu.
+      menu_MENU = book_DATABASE.getMenu ();
+
+      // V. Register the block handlers.
       registerBlockHandlers ({
-        book_body_block:     book_bodyBlock,
-        book_contents_block: book_contentsBlock,
-        book_label_block:    book_labelBlock,
-        book_link_block:     book_linkBlock
+        book_body_block: book_bodyBlock,
       });
 
-      // IV. Register the page handlers.
+      // VI. Register the page handlers.
       registerPageHandlers ({
-        book_book_page:    book_page,
-        book_page_page:    book_page,
-        book_section_page: book_page
+        book_book_page:    template_page,
+        book_page_page:    template_page,
+        book_section_page: template_page
       });
     },
     failure
@@ -123,15 +126,12 @@ function book_parseDatabase (url, doc) {
 */
 function book_parseBook (databasePath, element) {
   var path = databasePath.concat ($('> name', element).text ());
-  var book = new book_Book (
-    null,
+  return new book_Book (
     book_getId ('book_book_page', path),
     $('> title', element).text (),
     $('> body',  element).text (),
-    []
+    book_parseContent (path, $('> content', element).children ().toArray ())
   );
-  book.children = book_parseContent (book, path, $('> content', element).children ().toArray ());
-  return book;
 }
 
 /*
@@ -140,16 +140,13 @@ function book_parseBook (databasePath, element) {
   * parentPath, a string array
   * element, a JQuery HTML Element
 */
-function book_parseSection (parent, parentPath, element) {
+function book_parseSection (parentPath, element) {
   var path = parentPath.concat ($('> name', element).text ());
-  var section = new book_Section (
-    parent,
+  return new book_Section (
     book_getId ('book_section_page', path),
     $('> title', element).text (),
-    []
+    book_parseContent (path, $('> content', element).children ().toArray ())
   );
-  section.children = book_parseContent (section, path, $('> content', element).children ().toArray ());
-  return section;
 }
 
 /*
@@ -158,9 +155,8 @@ function book_parseSection (parent, parentPath, element) {
   * parentPath, a string array
   * element, a JQuery HTML Element
 */
-function book_parsePage (parent, parentPath, element) {
+function book_parsePage (parentPath, element) {
   return new book_Page (
-    parent,
     book_getId ('book_page_page', parentPath.concat ($('> name', element).text ())),
     $('> title', element).text (),
     $('> body', element).text ()
@@ -173,15 +169,15 @@ function book_parsePage (parent, parentPath, element) {
   * parentPath, a string array
   * elements, a JQuery HTML Element array
 */
-function book_parseContent (parent, parentPath, elements) {
+function book_parseContent (parentPath, elements) {
   return elements.map (
     function (element) {
       var element = $(element);
       switch (element.prop ('tagName')) {
         case 'section':
-          return book_parseSection (parent, parentPath, element);
+          return book_parseSection (parentPath, element);
         case 'page':
-          return book_parsePage (parent, parentPath, element);
+          return book_parsePage (parentPath, element);
         default:
           strictError ('[book][book_parseContent] Error: an error occured while trying to parse a Book Content element. The element\'s tag name is invalid.');
           return null;
@@ -190,7 +186,7 @@ function book_parseContent (parent, parentPath, elements) {
 }
 ```
 
-Block Handlers
+block Handlers
 --------------
 
 ```javascript
@@ -198,35 +194,6 @@ Block Handlers
 */
 function book_bodyBlock (blockElement, success, failure) {
   book_DATABASE.getBodyBlock (blockElement, success, failure);
-}
-
-/*
-*/
-function book_contentsBlock (blockElement, success, failure) {
-  book_DATABASE.getContentsBlock (blockElement, success, failure);
-}
-
-/*
-*/
-function book_labelBlock (blockElement, success, failure) {
-  book_DATABASE.getLabelBlock (blockElement, success, failure);
-}
-
-/*
-*/
-function book_linkBlock (blockElement, success, failure) {
-  book_DATABASE.getLinkBlock (blockElement, success, failure);
-}
-```
-
-Page Handlers
--------------
-
-```javascript
-/*
-*/
-function book_page (id, success, failure) {
-  book_DATABASE.getPage (id, success, failure);
 }
 ```
 
@@ -236,25 +203,17 @@ Class Definitions
 ```javascript
 /*
 */
-function book_Page (parent, id, title, body) {
-  menu_Leaf.call (this, parent, id, title);
-  this.body = body;
+function book_Page (id, title, body) {
+  this.id     = id;
+  this.title  = title;
+  this.body   = body;
 }
 
 /*
-  Create a new prototype object for book_Page
-  and set book_Element's prototype as the
-  object's prototype.
 */
-book_Page.prototype = Object.create (menu_Leaf.prototype);
-
-/*
-  Update the prototype's constructor property so
-  that any functions that read it can determine
-  which constructor function was used to
-  construct its instance objects.
-*/
-book_Page.prototype.constructor = book_Page;
+book_Page.prototype.getElement = function (id) {
+  return this.id === id ? this : null;
+}
 
 /*
 */
@@ -264,63 +223,43 @@ book_Page.prototype.getRawPageTemplate = function (success, failure) {
 
 /*
 */
+book_Page.prototype.getTemplates = function () {
+  return [new template_Page (null, this.id, this.getRawPageTemplate)];
+}
+
+/*
+*/
+book_Page.prototype.getMenuElements = function () {
+  return [new menu_Leaf (null, this.id, this.title, this.getRawPageTemplate)];
+}
+
+/*
+*/
 book_Page.prototype.getBodyElement = function () {
-  return this.addAttributes (
-    $('<div></div>')
-      .addClass ('book_body')
-      .addClass ('book_page_body')
-      .html (this.body));
+  return $('<div></div>')
+    .addClass ('book_body')
+    .addClass ('book_page_body')
+    .html (this.body);
 }
 
 /*
 */
-book_Page.prototype.getLabelElement = function () {
-  return menu_Leaf.prototype.getLabelElement.call (this)
-    .addClass ('book_label')
-    .addClass ('book_page_label');
+function book_Section (id, title, children) {
+  this.id       = id;
+  this.title    = title;
+  this.children = children;
 }
 
 /*
 */
-book_Page.prototype.getLinkElement = function (success, failure) {
-  return menu_Leaf.prototype.getLinkElement.call (this)
-    .addClass ('book_link')
-    .addClass ('book_page_link');
-}
+book_Section.prototype.getElement = function (id) {
+  if (this.id === id) { return this; }
 
-/*
-*/
-book_Page.prototype.getContentsItemElement = function (numColumns, depth) {
-  return menu_Leaf.prototype.getContentsItemElement.call (this, numColumns, depth)
-    .addClass ('book_contents_item')
-    .addClass ('book_contents_page_item');
-}
-
-/*
-*/
-function book_Section (parent, id, title, children) {
-  menu_Node.call (this, parent, id, title, children);
-}
-
-/*
-  Create a new prototype object for book_Section
-  and set book_Element's prototype as the
-  object's prototype.
-*/
-book_Section.prototype = Object.create (menu_Node.prototype);
-
-/*
-  Update the prototype's constructor property so
-  that any functions that read it can determine
-  which constructor function was used to
-  construct its instance objects.
-*/
-book_Section.prototype.constructor = book_Section;
-
-/*
-*/
-book_Section.prototype.getRawPageTemplate = function (success, failure) {
-  getTemplate ('modules/book/templates/section_page_template.html', success, failure);
+  for (var i = 0; i < this.children.length; i ++) {
+    var element = this.children [i].getElement (id);
+    if (element) { return element; }
+  }
+  return null;
 }
 
 /*
@@ -331,64 +270,53 @@ book_Section.prototype.getRawSectionTemplate = function (success, failure) {
 
 /*
 */
-book_Section.prototype.getLabelElement = function () {
-  return menu_Node.prototype.getLabelElement.call (this)
-    .addClass ('book_label')
-    .addClass ('book_section_label');
-}
+book_Section.prototype.getTemplates = function () {
+  // I. Create the section template.
+  var sectionTemplate = new template_Section (null, this.id, [], this.getRawSectionTemplate);
 
-/*
-*/
-book_Section.prototype.getLinkElement = function () {
-  var element = null;
-  var page = this.getFirstLeaf ();
-  if (page) {
-    element = menu_Element.prototype._getLinkElement.call (this, page.id)
-      .addClass ('menu_node_link');
-  } else {
-    strictError ('[book][book_Section.getLinkElement] Error: an error occured while trying to create a new section link. The section is empty.');
-    element = menu_Element.prototype.getLinkElement.call (this);
+  // III. Create child templates.
+  for (var i = 0; i < this.children.length; i ++) {
+    templates = this.children [i].getTemplates ();
+    for (var j = 0; j < templates.length; j ++) {
+      var template = templates [j];
+      template.parent = sectionTemplate;
+      sectionTemplate.children.push (template);
+    }
   }
-  return element
-    .addClass ('book_link')
-    .addClass ('book_section_link');
+
+  // IV. Return templates.
+  return [sectionTemplate];
 }
 
 /*
 */
-book_Section.prototype.getContentsItemElement = function (numColumns, depth) {
-  return menu_Node.prototype.getContentsItemElement.call (this, numColumns, depth)
-    .addClass ('book_contents_item')
-    .addClass ('book_contents_section_item');
+book_Section.prototype.getMenuElements = function () {
+  // I. Create node element.
+  var node = new menu_Node (null, this.id, this.title, [], this.getRawSectionTemplate);
+
+  // II. Create children elements.
+  for (var i = 0; i < this.children.length; i ++) {
+    elements = this.children [i].getMenuElements ();
+    for (var j = 0; j < elements.length; j ++) {
+      elements [j].parent = node;
+      node.children.push (elements [j]);
+    }
+  }
+  return [node];
 }
 
 /*
 */
-book_Section.prototype.getContentsElement = function (numColumns, depth) {
-  return menu_Node.prototype.getContentsElement.call (this, numColumns, depth)
-    .addClass ('book_contents')
-    .addClass ('book_section_contents');
-}
-
-/*
-*/
-function book_Book (parent, id, title, body, children) {
-  menu_Node.call (this, parent, id, title, children);
+function book_Book (id, title, body, children) {
+  book_Section.call (this, id, title, children);
   this.body = body;
 }
 
 /*
-  Create a new prototype object for book_Book
-  and set book_Element's prototype as the
-  object's prototype.
 */
-book_Book.prototype = Object.create (menu_Node.prototype);
+book_Book.prototype = Object.create (book_Section.prototype);
 
 /*
-  Update the prototype's constructor property so
-  that any functions that read it can determine
-  which constructor function was used to
-  construct its instance objects.
 */
 book_Book.prototype.constructor = book_Book;
 
@@ -416,50 +344,9 @@ book_Book.prototype.getBodyElement = function () {
 
 /*
 */
-book_Book.prototype.getLabelElement = function () {
-  return menu_Node.prototype.getLabelElement.call (this)
-      .addClass ('book_label')
-      .addClass ('book_book_label');
-}
-
-/*
-*/
-book_Book.prototype.getLinkElement = function () {
-  return menu_Node.prototype.getLinkElement.call (this)
-    .addClass ('book_link')
-    .addClass ('book_book_link');
-}
-
-/*
-*/
-book_Book.prototype.getContentsItemElement = function (numColumns, depth) {
-  return menu_Node.prototype.getContentsItemElement.call (this, numColumns, depth)
-    .addClass ('book_contents_item')
-    .addClass ('book_contents_book_item');
-}
-
-/*
-*/
-book_Book.prototype.getContentsElement = function (numColumns, depth) {
-  return menu_Node.prototype.getContentsElement.call (this, numColumns, depth)
-    .addClass ('book_contents')
-    .addClass ('book_book_contents');
-}
-
-/*
-*/
 function book_Database (books) {
-  menu_Database.call (this);
   this.books = books;
 }
-
-/*
-*/
-book_Database.prototype = Object.create (menu_Database.prototype);
-
-/*
-*/
-book_Database.prototype.constructor = book_Database;
 
 /*
 */
@@ -474,16 +361,30 @@ book_Database.prototype.getElement = function (id) {
 
 /*
 */
-book_Database.prototype.getBodyBlock = function (blockElement, success, failure) {
-  var element = this.getElement (blockElement.text ()).getBodyElement ();
-  blockElement.replaceWith (element);
-  success (element);
+book_Database.prototype.getTemplates = function () {
+  var templates = [];
+  for (var i = 0; i < this.books.length; i ++) {
+    Array.prototype.push.apply (templates, this.books [i].getTemplates ());
+  }
+  return templates;
 }
 
 /*
 */
-book_Database.prototype.getPage = function (id, success, failure) {
-  this.getElement (id).getFullPageTemplate (success, failure);
+book_Database.prototype.getMenu = function () {
+  var menu = new menu_Menu ([]);
+  for (var i = 0; i < this.books.length; i ++) {
+    Array.prototype.push.apply (menu.children, this.books [i].getMenuElements ());
+  }
+  return menu;
+}
+
+/*
+*/
+book_Database.prototype.getBodyBlock = function (blockElement, success, failure) {
+  var element = this.getElement (blockElement.text ()).getBodyElement ();
+  blockElement.replaceWith (element);
+  success (element);
 }
 ```
 
@@ -621,8 +522,6 @@ _"Load the Database"
 _"Parse the Database"
 
 _"Block Handlers"
-
-_"Page Handlers"
 
 _"Class Definitions"
 
