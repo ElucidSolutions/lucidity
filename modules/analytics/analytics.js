@@ -43,7 +43,7 @@ var analytics_SETTINGS_URL = 'modules/analytics/settings.xml';
         a.async = 1;
         a.src = g;
         m.parentNode.insertBefore (a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+      })(window,document,'script','http://www.google-analytics.com/analytics.js','ga');
 
       // III. Create the Property Tracker. 
       ga('create', settings.pageVisitPropertyId, 'auto');
@@ -80,6 +80,7 @@ var analytics_SETTINGS_URL = 'modules/analytics/settings.xml';
 */
 function analytics_loadSettings (url, success, failure) {
   $.ajax (url, {
+    dataType: 'xml',
     success: function (doc) {
       success (analytics_parseSettings (doc));
     },
