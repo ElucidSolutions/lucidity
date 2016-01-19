@@ -154,8 +154,7 @@ menu_Element.prototype._getLinkElement = function (id) {
 /*
 */
 menu_Element.prototype.getContentsItemElement = function (numColumns, depth) {
-  return this.addAttributes ($('<li></li>').addClass ('menu_contents_item'))
-    .append (this.getLinkElement ());
+  return this.addAttributes ($('<li></li>').addClass ('menu_contents_item'));
 }
 ```
 
@@ -213,7 +212,8 @@ menu_Leaf.prototype.getLinkElement = function () {
 */
 menu_Leaf.prototype.getContentsItemElement = function (numColumns, depth) {
   return menu_Element.prototype.getContentsItemElement.call (this, numColumns, depth)
-    .addClass ('menu_contents_leaf_item');
+    .addClass ('menu_contents_leaf_item')
+    .append (this.getLinkElement ());
 }
 ```
 
@@ -292,7 +292,11 @@ menu_Node.prototype.getContentsItemElement = function (numColumns, depth) {
   var element = menu_Element.prototype.getContentsItemElement.call (this, numColumns, depth)
     .addClass ('menu_node_contents_item');
 
-  return depth === 0 ? element : element.append (this.getContentsElement (numColumns, depth));
+  return depth === 0 ? 
+    element.append (this.getLinkElement ()) :
+    element
+      .append (this.getLabelElement ())
+      .append (this.getContentsElement (numColumns, depth));
 }
 
 /*
@@ -375,14 +379,11 @@ menu_Menu.prototype.getContentsBlock = function (blockElement, success, failure)
         blockArguments.menu_max_level
       );
 
-      menu_collapse (blockArguments.menu_expand_level + 1, element);
+      var level = parseInt (blockArguments.menu_expand_level) + 1;
+      menu_collapse (level, element);
 
       if (blockArguments.menu_expandable === 'true') {
-        menu_makeCollapsable (
-          blockArguments.menu_expand_level + 1,
-          blockArguments.menu_max_level,
-          element
-        );
+        menu_makeCollapsable (level, blockArguments.menu_max_level, element);
       }
 
       var leaf = self.getElement (blockArguments.menu_selected_element_id);
@@ -490,9 +491,9 @@ function menu_makeCollapsable (expandLevel, maxLevel, element) {
   $('.menu_contents_item', element).each (
     function (itemElementIndex, itemElement) {
       itemElement = $(itemElement);
-      var level = itemElement.attr ('data-menu-level');
+      var level = parseInt (itemElement.attr ('data-menu-level'));
       if (level >= expandLevel && level <= maxLevel) {
-        var linkElement = $('> .menu_node_link', itemElement);
+        var linkElement = $('> .menu_node_label', itemElement);
         linkElement.click (
           function (event) {
             event.preventDefault ();
