@@ -39,15 +39,15 @@ Load Event Handler
 (function () {
   var failure = function () {};
 
-  // I. Load libraries.
+  // II. Load libraries.
   loadScript ('modules/search/lib/lunr/lunr.js',
     function () {
-      // II. Load the search database.
+      // III. Load the search database.
       search_loadDatabase (search_DATABASE_URL,
         function (database) {
           search_DATABASE = database;
 
-          // III. Register the block handlers.
+          // IV. Register the block handlers.
           registerBlockHandlers ({
             search_filter_block:    search_filterBlock,
             search_form_block:      search_formBlock,
@@ -57,7 +57,7 @@ Load Event Handler
             search_results_block:   search_resultsBlock
           });
 
-          // IV. Register the page handlers.
+          // V. Register the page handlers.
           registerPageHandler ('search_page_block', 'modules/search/templates/search_page.html');
         },
         failure
