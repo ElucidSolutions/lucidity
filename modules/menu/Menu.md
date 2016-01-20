@@ -31,9 +31,11 @@ The Load Event Handler
 (function () {
   // I. Register the block handlers.
   registerBlockHandlers ({
-    menu_label_block:    menu_labelBlock,
-    menu_link_block:     menu_linkBlock,
-    menu_contents_block: menu_contentsBlock
+    menu_contents_block:      menu_contentsBlock,
+    menu_leaf_label_block:    menu_leafLabelBlock,
+    menu_leaf_link_block:     menu_leafLinkBlock,
+    menu_node_label_block:    menu_nodeLabelBlock,
+    menu_node_link_block:     menu_nodeLinkBlock
   });
 }) ();
 ```
@@ -44,20 +46,32 @@ The Block Handlers
 ```javascript
 /*
 */
-function menu_labelBlock (blockElement, success, failure) {
-  menu_MENU.getLabelBlock (blockElement, success, failure);
-}
-
-/*
-*/
-function menu_linkBlock (blockElement, success, failure) {
-  menu_MENU.getLinkBlock (blockElement, success, failure);
-}
-
-/*
-*/
 function menu_contentsBlock (blockElement, success, failure) {
   menu_MENU.getContentsBlock (blockElement, success, failure);
+}
+
+/*
+*/
+function menu_leafLabelBlock (blockElement, success, failure) {
+  menu_MENU.getLeafLabelBlock (blockElement, success, failure);
+}
+
+/*
+*/
+function menu_leafLinkBlock (blockElement, success, failure) {
+  menu_MENU.getLeafLinkBlock (blockElement, success, failure);
+}
+
+/*
+*/
+function menu_nodeLabelBlock (blockElement, success, failure) {
+  menu_MENU.getNodeLabelBlock (blockElement, success, failure);
+}
+
+/*
+*/
+function menu_nodeLinkBlock (blockElement, success, failure) {
+  menu_MENU.getNodeLinkBlock (blockElement, success, failure);
 }
 ```
 
@@ -81,11 +95,11 @@ function menu_Element (parent, id, title) {
 
 /*
 */
-// menu_Element.prototype.getElement = function (id) {} 
+// menu_Element.prototype.getNode = function (id) {}
 
 /*
 */
-// menu_Element.prototype.getNodeElement = function (id) {}
+// menu_Element.prototype.getLeaf = function (id) {}
 
 /*
 */
@@ -186,13 +200,13 @@ menu_Leaf.prototype.getFirstLeaf = function () {
 
 /*
 */
-menu_Leaf.prototype.getElement = function (id) {
+menu_Leaf.prototype.getLeaf = function (id) {
   return this.id === id ? this : null;
 }
 
 /*
 */
-menu_Leaf.prototype.getNodeElement = function (id) {
+menu_Leaf.prototype.getNode = function (id) {
   return null;
 }
 
@@ -240,11 +254,9 @@ menu_Node.prototype.constructor = menu_Node;
 
 /*
 */
-menu_Node.prototype.getElement = function (id) {
-  if (this.id === id) { return this; }
-
+menu_Node.prototype.getLeaf = function (id) {
   for (var i = 0; i < this.children.length; i ++) {
-    var element = this.children [i].getElement (id);
+    var element = this.children [i].getLeaf (id);
     if (element) { return element; }
   }
   return null;
@@ -252,11 +264,11 @@ menu_Node.prototype.getElement = function (id) {
 
 /*
 */
-menu_Node.prototype.getNodeElement = function (id) {
+menu_Node.prototype.getNode = function (id) {
   if (this.id === id) { return this; }
 
   for (var i = 0; i < this.children.length; i ++) {
-    var element = this.children [i].getNodeElement (id);
+    var element = this.children [i].getNode (id);
     if (element) { return element; }
   }
   return null;
@@ -324,9 +336,9 @@ function menu_Menu (children) {
 
 /*
 */
-menu_Menu.prototype.getElement = function (id) {
+menu_Menu.prototype.getLeaf = function (id) {
   for (var i = 0; i < this.children.length; i ++) {
-    var element = this.children [i].getElement (id);
+    var element = this.children [i].getLeaf (id);
     if (element) { return element; }
   }
   return null;
@@ -334,9 +346,9 @@ menu_Menu.prototype.getElement = function (id) {
 
 /*
 */
-menu_Menu.prototype.getNodeElement = function (id) {
+menu_Menu.prototype.getNode = function (id) {
   for (var i = 0; i < this.children.length; i ++) {
-    var element = this.children [i].getNodeElement (id);
+    var element = this.children [i].getNode (id);
     if (element) { return element; }
   }
   return null;
@@ -344,16 +356,32 @@ menu_Menu.prototype.getNodeElement = function (id) {
 
 /*
 */
-menu_Menu.prototype.getLabelBlock = function (blockElement, success, failure) {
-  var element = this.getElement (blockElement.text ()).getLabelElement ();
+menu_Menu.prototype.getLeafLabelBlock = function (blockElement, success, failure) {
+  var element = this.getLeaf (blockElement.text ()).getLabelElement ();
   blockElement.replaceWith (element);
   success (element);
 }
 
 /*
 */
-menu_Menu.prototype.getLinkBlock = function (blockElement, success, failure) {
-  var element = this.getElement (blockElement.text ()).getLinkElement ();
+menu_Menu.prototype.getLeafLinkBlock = function (blockElement, success, failure) {
+  var element = this.getLeaf (blockElement.text ()).getLinkElement ();
+  blockElement.replaceWith (element);
+  success (element);
+}
+
+/*
+*/
+menu_Menu.prototype.getNodeLabelBlock = function (blockElement, success, failure) {
+  var element = this.getNode (blockElement.text ()).getLabelElement ();
+  blockElement.replaceWith (element);
+  success (element);
+}
+
+/*
+*/
+menu_Menu.prototype.getNodeLinkBlock = function (blockElement, success, failure) {
+  var element = this.getNode (blockElement.text ()).getLinkElement ();
   blockElement.replaceWith (element);
   success (element);
 }
@@ -372,7 +400,7 @@ menu_Menu.prototype.getContentsBlock = function (blockElement, success, failure)
     ],
     blockElement,
     function (blockArguments) {
-      var node = self.getNodeElement (blockArguments.menu_id);
+      var node = self.getNode (blockArguments.menu_id);
 
       var element = node.getContentsElement (
         blockArguments.menu_num_columns,
@@ -386,7 +414,7 @@ menu_Menu.prototype.getContentsBlock = function (blockElement, success, failure)
         menu_makeCollapsable (level, blockArguments.menu_max_level, element);
       }
 
-      var leaf = self.getElement (blockArguments.menu_selected_element_id);
+      var leaf = self.getLeaf (blockArguments.menu_selected_element_id);
       if (leaf) {
         var line = leaf.getLine ();
 
@@ -403,7 +431,7 @@ menu_Menu.prototype.getContentsBlock = function (blockElement, success, failure)
       PAGE_LOAD_HANDLERS.push (
         function (done, id) {
           menu_deselect (element);
-          var leaf = self.getElement (id);
+          var leaf = self.getLeaf (id);
           if (leaf) {
             var newLine = leaf.getLine ();
             menu_select     (id, element);

@@ -335,11 +335,38 @@ book_Book.prototype.getRawSectionTemplate = function (success, failure) {
 /*
 */
 book_Book.prototype.getBodyElement = function () {
-  return this.addAttributes (
-    $('<div></div>')
-      .addClass ('book_body')
-      .addClass ('book_book_body')
-      .html (this.body));
+  return $('<div></div>')
+    .addClass ('book_body')
+    .addClass ('book_book_body')
+    .html (this.body);
+}
+
+/*
+*/
+book_Book.prototype.getTemplates = function () {
+  var templates = book_Section.prototype.getTemplates.call (this);
+  templates.push (new template_Page (null, this.id, this.getRawPageTemplate));
+  return templates;
+}
+
+/*
+*/
+book_Book.prototype.getMenuElements = function () {
+  // I. Create node element.
+  var node = new menu_Node (null, this.id, this.title, [], this.getRawSectionTemplate);
+
+  // II. Create the leaf element.
+  node.children.push (new menu_Leaf (node, this.id, this.title, this.getRawPageTemplate));
+
+  // II. Create children elements.
+  for (var i = 0; i < this.children.length; i ++) {
+    elements = this.children [i].getMenuElements ();
+    for (var j = 0; j < elements.length; j ++) {
+      elements [j].parent = node;
+      node.children.push (elements [j]);
+    }
+  }
+  return [node];
 }
 
 /*
