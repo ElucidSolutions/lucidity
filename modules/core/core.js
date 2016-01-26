@@ -57,22 +57,19 @@ $(document).ready (function () {
   loadSettings (function (settings) {
     STRICT_ERROR_MODE = settings.errorMode;
 
-    // II. Load the current theme's CSS file.
-    $.getCSS (settings.theme);
-
-    // III. Load the enabled modules.
+    // II. Load the enabled modules.
     loadModules (settings, function () {
 
-      // IV. Register the core block handlers.
+      // III. Register the core block handlers.
       registerBlockHandlers ({
         core_link_block:     linkBlock,
         core_template_block: templateBlock
       });
 
-      // V. Expand any block elements. 
+      // IV. Expand any block elements. 
       expandDocumentBlocks (settings.defaultId,
         function () {
-          // VI. Fadeout the overlay element.
+          // V. Fadeout the overlay element.
           $('#overlay').fadeOut ('slow',
             function () {
               $(this).remove ();

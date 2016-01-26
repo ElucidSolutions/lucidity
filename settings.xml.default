@@ -27,15 +27,6 @@
   <defaultId>example_page</defaultId>
 
   <!--
-    The theme element gives the location of the CSS
-    file that defines the site's theme. Themes are
-    represented by directories within /themes. Every
-    theme directory contains a CSS file named
-    /themes/THEME NAME/THEME NAME.css.
-  -->
-  <theme>themes/lucidity/lucidity.css</theme>
-
-  <!--
     The modules element contains a list of all of the
     modules installed on the system and whether or
     not they have been enabled or disabled.
