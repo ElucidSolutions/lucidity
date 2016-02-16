@@ -18,39 +18,39 @@ var article_SETTINGS_URL = 'modules/article/settings.xml';
 var article_ARTICLES = {};
 
 // The module's load event handler.
-(function () {
-  // Define the failure event handler.
-  var failure = function () {};
+registerModule (
+  function (done) {
+    // I. Load the module settings.
+    article_loadSettings (article_SETTINGS_URL,
+      function (settings) {
+        // II. Load the articles.
+        article_loadArticles (settings.articles,
+          function (articles) {
+            // III. Cache the loaded articles.
+            article_ARTICLES = articles;
 
-  // I. Load the module settings.
-  article_loadSettings (article_SETTINGS_URL,
-    function (settings) {
-      // II. Load the articles.
-      article_loadArticles (settings.articles,
-        function (articles) {
-          // III. Cache the loaded articles.
-          article_ARTICLES = articles;
+            // IV. Register the block handlers.
+            registerBlockHandlers ({
+              article_article_list_block: article_articleListBlock,
+              article_article_block:      article_articleBlock,
+              article_author_block:       article_authorBlock,
+              article_body_block:         article_bodyBlock,
+              article_date_block:         article_dateBlock,
+              article_summary_block:      article_summaryBlock,
+              article_title_block:        article_titleBlock
+            });
 
-          // IV. Register the block handlers.
-          registerBlockHandlers ({
-            article_article_list_block: article_articleListBlock,
-            article_article_block:      article_articleBlock,
-            article_author_block:       article_authorBlock,
-            article_body_block:         article_bodyBlock,
-            article_date_block:         article_dateBlock,
-            article_summary_block:      article_summaryBlock,
-            article_title_block:        article_titleBlock
-          });
+            // V. Register the page handlers.
+            registerPageHandler ('article_article_page', 'modules/article/templates/article_page.html');
 
-          // V. Register the page handlers.
-          registerPageHandler ('article_article_page_block', 'modules/article/templates/article_page.html');
-        },
-        failure
-      );
-    },
-    failure
-  );
-}) ();
+            done ();
+          },
+          done
+        );
+      },
+      done
+    );
+});
 
 /*
   article_loadSettings accepts three arguments:
@@ -143,7 +143,7 @@ function article_parseArticles (doc) {
   represents the article described by the string.
 */
 function article_parseArticle (articleElement) {
-  var id = new URI ('article_article_page_block')
+  var id = new URI ('article_article_page')
     .segmentCoded ($('> id', articleElement).text ())
     .toString ();
 

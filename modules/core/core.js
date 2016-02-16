@@ -46,6 +46,10 @@ var PAGE_HANDLERS = {};
 var PAGE_LOAD_HANDLERS = [];
 
 /*
+*/
+var MODULES = [];
+
+/*
   The Document Ready event handler. This function
   loads the modules that have been enabled in
   settings.xml and initializes the user interface
@@ -160,6 +164,12 @@ function parseSettings (doc) {
 }
 
 /*
+*/
+function registerModule (module) {
+  MODULES.push (module);
+}
+
+/*
   loadModules accepts two arguments: settings, a
   Settings object; and done, a function. It
   loads the modules declared in settings, and 
@@ -176,8 +186,12 @@ function loadModules (settings, done) {
     url:     'index.js'
   });
 
-  // II. Load the modules in the modules list.
-  _loadModules (0, settings.modules, done);
+  // II. Load the module files in the modules list.
+  _loadModules (0, settings.modules, 
+    function () {
+      // III. Execute the module load functions.
+      seq (MODULES, done);
+  });
 }
 
 /*

@@ -18,26 +18,29 @@ This module simply loads the Lightbox2 library and its associated CSS files.
   This function loads the Lightbox2 library and
   its associated stylesheets.
 */
-(function () {
-  // I. Load the Lightbox2 library.
-  loadScript ('modules/lightbox/lib/lightbox2/dist/js/lightbox.js',
-    function () {
-      // II. Load the CSS files.
-      $.getCSS ('modules/lightbox/lib/lightbox2/dist/css/lightbox.css');
+registerModule (
+  function (done) {
+    // I. Load the Lightbox2 library.
+    loadScript ('modules/lightbox/lib/lightbox2/dist/js/lightbox.js',
+      function () {
+        // II. Load the CSS files.
+        $.getCSS ('modules/lightbox/lib/lightbox2/dist/css/lightbox.css');
 
-      // III. Set the default Lightbox settings.
-      lightbox.option ({
-        positionFromTop: 200
-      });
-  });
-}) ();
+        // III. Set the default Lightbox settings.
+        lightbox.option ({
+          positionFromTop: 200
+        });
+
+        done ();
+    });
+});
 ```
 
 Generating Source Files
 -----------------------
 
 You can generate the Lightbox module's source files using [Literate Programming](https://github.com/jostylr/literate-programming), simply execute:
-`literate-programming Lightbox.md`
+`literate-programming Readme.md`
 from the command line.
 
 <!---

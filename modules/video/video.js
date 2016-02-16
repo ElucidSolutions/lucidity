@@ -24,23 +24,26 @@ var video_LOAD_HANDLERS = {};
   registers this module's block handlers with the
   system.
 */
-(function () {
-  // I. Load libraries.
-  loadScript ('modules/video/lib/video-js/video.js',
-    function () {
-      // II. Load the CSS files.
-      $.getCSS ('modules/video/lib/video-js/video-js.css');
+registerModule (
+  function (done) {
+    // I. Load libraries.
+    loadScript ('modules/video/lib/video-js/video.js',
+      function () {
+        // II. Load the CSS files.
+        $.getCSS ('modules/video/lib/video-js/video-js.css');
 
-      // III. Configure the Video.js library.
-      videojs.options.flash.swf = 'modules/video/lib/video-js/video-js.swf';
+        // III. Configure the Video.js library.
+        videojs.options.flash.swf = 'modules/video/lib/video-js/video-js.swf';
 
-      // III. Register the block handlers.
-      registerBlockHandlers ({
-        video_player_block:  video_playerBlock,
-        video_example_block: 'modules/video/templates/example_block.html'
-      });
-  });    
-}) ();
+        // III. Register the block handlers.
+        registerBlockHandlers ({
+          video_player_block:  video_playerBlock,
+          video_example_block: 'modules/video/templates/example_block.html'
+        });
+
+        done ();
+    });    
+});
 
 /*
   video_playerBlock handles 'video_player_block'

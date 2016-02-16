@@ -12,14 +12,17 @@
   The module's load event handler. This function
   registers the module's block handlers.
 */
-(function () {
-  // I. Register the block handlers.
-  registerBlockHandlers ({
-    rate_block:           'modules/rate/templates/rate_block.html',
-    rate_up_vote_block:   rate_upVoteBlock,
-    rate_down_vote_block: rate_downVoteBlock
-  });
-}) ();
+registerModule (
+  function (done) {
+    // I. Register the block handlers.
+    registerBlockHandlers ({
+      rate_block:           'modules/rate/templates/rate_block.html',
+      rate_up_vote_block:   rate_upVoteBlock,
+      rate_down_vote_block: rate_downVoteBlock
+    });
+
+    done ();
+});
 
 /*
   rate_upVoteBlock accepts two arguments:

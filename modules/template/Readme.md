@@ -63,10 +63,11 @@ The Template Class
 ```javascript
 /*
 */
-function template_Template (parent, id, getRawElement) {
+function template_Template (parent, id, getRawElement, classes) {
   this.parent        = parent;
   this.id            = id;
   this.getRawElement = getRawElement;
+  this.classes       = classes;
 }
 
 /*
@@ -111,6 +112,7 @@ template_Template.prototype.getElement = function (success, failure) {
   this.getRawElement (
     function (rawTemplate) {
       success (rawTemplate
+        .addClass (self.classes)
         .attr ('data-template-id', self.id)
         .attr ('data-template-level', self.getLevel ()));
     },
@@ -125,8 +127,8 @@ The Page Template Class
 ```javascript
 /*
 */
-function template_Page (parent, id, getRawElement) {
-  template_Template.call (this, parent, id, getRawElement);
+function template_Page (parent, id, getRawElement, classes) {
+  template_Template.call (this, parent, id, getRawElement, classes);
 }
 
 /*
@@ -189,8 +191,8 @@ The Section Template Class
 ```javascript
 /*
 */
-function template_Section (parent, id, children, getRawTemplate) {
-  template_Template.call (this, parent, id, getRawTemplate);
+function template_Section (parent, id, children, getRawElement, classes) {
+  template_Template.call (this, parent, id, getRawElement, classes);
   this.children = children;
 }
 
@@ -245,7 +247,7 @@ Generating Source Files
 -----------------------
 
 You can generate the Template module's source files using [Literate Programming](https://github.com/jostylr/literate-programming), simply execute:
-`literate-programming Template.md`
+`literate-programming Readme.md`
 from the command line.
 
 <!---

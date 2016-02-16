@@ -24,34 +24,35 @@ var search_LUNR_INDICES = {};
 
 /*
 */
-(function () {
-  var failure = function () {};
+registerModule (
+  function (done) {
+    // II. Load libraries.
+    loadScript ('modules/search/lib/lunr/lunr.js',
+      function () {
+        // III. Load the search database.
+        search_loadDatabase (search_DATABASE_URL,
+          function (database) {
+            search_DATABASE = database;
 
-  // I. Load libraries.
-  loadScript ('modules/search/lib/lunr/lunr.js',
-    function () {
-      // II. Load the search database.
-      search_loadDatabase (search_DATABASE_URL,
-        function (database) {
-          search_DATABASE = database;
+            // IV. Register the block handlers.
+            registerBlockHandlers ({
+              search_filter_block:    search_filterBlock,
+              search_form_block:      search_formBlock,
+              search_index_block:     search_indexBlock,
+              search_interface_block: search_interfaceBlock,
+              search_link_block:      search_linkBlock,
+              search_results_block:   search_resultsBlock
+            });
 
-          // III. Register the block handlers.
-          registerBlockHandlers ({
-            search_filter_block:    search_filterBlock,
-            search_form_block:      search_formBlock,
-            search_index_block:     search_indexBlock,
-            search_interface_block: search_interfaceBlock,
-            search_link_block:      search_linkBlock,
-            search_results_block:   search_resultsBlock
-          });
+            // V. Register the page handlers.
+            registerPageHandler ('search_page_block', 'modules/search/templates/search_page.html');
 
-          // IV. Register the page handlers.
-          registerPageHandler ('search_page_block', 'modules/search/templates/search_page.html');
-        },
-        failure
-      );
-  });
-}) ();
+            done ();
+          },
+          done
+        );
+    });
+});
 
 /*
 */

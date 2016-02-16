@@ -12,17 +12,20 @@
   bxslider_load is the load event handler for this
   module.
 */
-(function () {
-  // I. Load libraries.
-  loadScript ('modules/bxslider/lib/jquery.bxslider/jquery.bxslider.js',
-    function () {
-      // II. Load CSS files.
-      $.getCSS ('modules/bxslider/lib/jquery.bxslider/jquery.bxslider.css');
+registerModule (
+  function (done) {
+    // I. Load libraries.
+    loadScript ('modules/bxslider/lib/jquery.bxslider/jquery.bxslider.js',
+      function () {
+        // II. Load CSS files.
+        $.getCSS ('modules/bxslider/lib/jquery.bxslider/jquery.bxslider.css');
 
-      // III. Register the block handler.
-      registerBlockHandler ('bxslider_block', bxslider_block);
-    });
-}) ();
+        // III. Register the block handler.
+        registerBlockHandler ('bxslider_block', bxslider_block);
+
+        done ();
+      });
+});
 
 /*
   bxslider_block is a block handler that expands an

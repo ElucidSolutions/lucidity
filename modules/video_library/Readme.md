@@ -19,10 +19,8 @@ Load Event Handler
 /*
   The module's load event handler.
 */
-(function () {
-  // Define the failure event handler.
-  var failure = function () {};
-
+registerModule (
+function (done) {
   // I. Load the Video Database.
   video_library_loadDatabase (video_library_DATABASE_URL,
     function (database) {
@@ -43,10 +41,12 @@ Load Event Handler
 
       // V. Register the module's search source.
       search_registerSource ('video_library_search_source', video_library_searchSource);
+
+      done ();
     },
-    failure
+    done
   );
-}) ();
+});
 ```
 
 Block Handlers
@@ -879,7 +879,7 @@ Generating Source Files
 -----------------------
 
 You can generate this module's source files using [Literate Programming](https://github.com/jostylr/literate-programming), simply execute:
-`literate-programming "Video Library.md"`
+`literate-programming "Readme.md"`
 from the command line.
 
 <!---

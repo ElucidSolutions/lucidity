@@ -7,10 +7,8 @@ var video_library_DATABASE = {};
 /*
   The module's load event handler.
 */
-(function () {
-  // Define the failure event handler.
-  var failure = function () {};
-
+registerModule (
+function (done) {
   // I. Load the Video Database.
   video_library_loadDatabase (video_library_DATABASE_URL,
     function (database) {
@@ -31,10 +29,12 @@ var video_library_DATABASE = {};
 
       // V. Register the module's search source.
       search_registerSource ('video_library_search_source', video_library_searchSource);
+
+      done ();
     },
-    failure
+    done
   );
-}) ();
+});
 
 /*
 function video_library_collectionBlock (blockElement, success, failure, expand) {

@@ -91,15 +91,22 @@ The global `PAGE_LOAD_HANDLERS` array lists the Page Load event handlers that ha
 var PAGE_LOAD_HANDLERS = [];
 ```
 
+### Modules
+
+```javascript
+/*
+*/
+var MODULES = [];
+```
+
 ### The Load Event Handler
 
 The Core module's load event handler runs when the site is loaded. This function performs five operations:
 
 1. it loads the configuration settings specified in settings.xml
-2. it loads the currently selected theme's CSS file
-3. it loads the modules listed as enabled in settings.xml
-4. it registers the core block handlers
-5. and lastly, it recursively expands any blocks contained within the page.
+2. it loads the modules listed as enabled in settings.xml
+3. it registers the core block handlers
+4. and lastly, it recursively expands any blocks contained within the page.
 
 ```javascript
 /*
@@ -229,6 +236,16 @@ function parseSettings (doc) {
 }
 ```
 
+### Register Modules
+
+```javascript
+/*
+*/
+function registerModule (module) {
+  MODULES.push (module);
+}
+```
+
 ### Load Modules
 
 Once the configuration settings have been loaded from settings.xml, the load event handler uses `loadModules` to load the modules that have been listed as enabled within settings.xml.
@@ -251,8 +268,12 @@ function loadModules (settings, done) {
     url:     'index.js'
   });
 
-  // II. Load the modules in the modules list.
-  _loadModules (0, settings.modules, done);
+  // II. Load the module files in the modules list.
+  _loadModules (0, settings.modules, 
+    function () {
+      // III. Execute the module load functions.
+      seq (MODULES, done);
+  });
 }
 
 /*
@@ -1365,7 +1386,7 @@ QUnit.test ('find', function (assert) {
 ### Generating Source Files
 
 You can generate the Core module's source files using [Literate Programming](https://github.com/jostylr/literate-programming), simply execute:
-`literate-programming Core.md`
+`literate-programming Readme.md`
 from the command line.
 
 <!---
@@ -1381,11 +1402,15 @@ _"Block and Page Handlers"
 
 _"The Page Load Handlers"
 
+_"Modules"
+
 _"The Load Event Handler"
 
 _"The Hash Change Event Handler"
 
 _"Load Settings"
+
+_"Register Modules"
 
 _"Load Modules"
 

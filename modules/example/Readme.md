@@ -12,13 +12,16 @@ The Example module is defined by [example.js](#Initialization "save:") which con
   The module load event handler. This function
   registers the module's block and page handlers.
 */
-(function () {
-  // I. Register the block handler.
-  registerBlockHandler ('example_block', 'modules/example/templates/block.html');
+registerModule (
+  function (done) {
+    // I. Register the block handler.
+    registerBlockHandler ('example_block', 'modules/example/templates/block.html');
 
-  // II. Register the page handler.
-  registerPageHandler ('example_page', 'modules/example/templates/page.html');
-}) ();
+    // II. Register the page handler.
+    registerPageHandler ('example_page', 'modules/example/templates/page.html');
+
+    done ();
+});
 ```
 
 This code is executed when the module is loaded and is responsible for registering the module's page and block handlers.
@@ -50,4 +53,4 @@ Similary, the page handler is located here: [templates/page.html](#Page Handler 
 
 ### Generating the Example module.
 
-The Example module's source files can be generated from this article using [Literate Programming](https://github.com/jostylr/literate-programming). To generate these source files, simply execute: `literate-programming 'Example.md'` from the command line.
+The Example module's source files can be generated from this article using [Literate Programming](https://github.com/jostylr/literate-programming). To generate these source files, simply execute: `literate-programming 'Readme.md'` from the command line.

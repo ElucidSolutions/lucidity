@@ -37,10 +37,11 @@ function template_page (id, success, failure) {
 
 /*
 */
-function template_Template (parent, id, getRawElement) {
+function template_Template (parent, id, getRawElement, classes) {
   this.parent        = parent;
   this.id            = id;
   this.getRawElement = getRawElement;
+  this.classes       = classes;
 }
 
 /*
@@ -85,6 +86,7 @@ template_Template.prototype.getElement = function (success, failure) {
   this.getRawElement (
     function (rawTemplate) {
       success (rawTemplate
+        .addClass (self.classes)
         .attr ('data-template-id', self.id)
         .attr ('data-template-level', self.getLevel ()));
     },
@@ -94,8 +96,8 @@ template_Template.prototype.getElement = function (success, failure) {
 
 /*
 */
-function template_Page (parent, id, getRawElement) {
-  template_Template.call (this, parent, id, getRawElement);
+function template_Page (parent, id, getRawElement, classes) {
+  template_Template.call (this, parent, id, getRawElement, classes);
 }
 
 /*
@@ -153,8 +155,8 @@ template_Page.prototype.getPageElement = function (success, failure) {
 
 /*
 */
-function template_Section (parent, id, children, getRawTemplate) {
-  template_Template.call (this, parent, id, getRawTemplate);
+function template_Section (parent, id, children, getRawTemplate, classes) {
+  template_Template.call (this, parent, id, getRawTemplate, classes);
   this.children = children;
 }
 

@@ -24,6 +24,9 @@ var book_DATABASE_URL = 'modules/book/database.xml';
 */
 var book_DATABASE = {};
 
+/*
+*/
+var book_SNIPPET_LENGTH = 500;
 ```
 
 The Load Event Handler
@@ -34,37 +37,40 @@ The Load Event Handler
   The module's load event handler. This function
   registers this modules block and page handlers.
 */
-(function () {
-  var failure = function () {}
+registerModule (
+  function (done) {
+    // I. Load the Book database.
+    book_loadDatabase (book_DATABASE_URL,
+      function (database) {
+        // II. Cache the Book database.
+        book_DATABASE = database;
 
-  // I. Load the Book database.
-  book_loadDatabase (book_DATABASE_URL,
-    function (database) {
-      // II. Cache the Book database.
-      book_DATABASE = database;
+        // III. Register the book templates.
+        template_registerTemplates (book_DATABASE.getTemplates ());
 
-      // III. Register the book templates.
-      template_registerTemplates (book_DATABASE.getTemplates ());
+        // IV. Register the book menu.
+        menu_MENU = book_DATABASE.getMenu ();
 
-      // IV. Register the book menu.
-      menu_MENU = book_DATABASE.getMenu ();
+        // V. Register the block handlers.
+        registerBlockHandlers ({
+          book_body_block: book_bodyBlock,
+        });
 
-      // V. Register the block handlers.
-      registerBlockHandlers ({
-        book_body_block: book_bodyBlock,
-      });
+        // VI. Register the page handlers.
+        registerPageHandlers ({
+          book_book_page:    template_page,
+          book_page_page:    template_page,
+          book_section_page: template_page
+        });
 
-      // VI. Register the page handlers.
-      registerPageHandlers ({
-        book_book_page:    template_page,
-        book_page_page:    template_page,
-        book_section_page: template_page
-      });
-    },
-    failure
-  );
+        // VII. Register the search source.
+        search_registerSource ('book_search_source', book_index);
 
-}) ();
+        done ();
+      },
+      done
+    );
+});
 ```
 
 Load the Database
@@ -186,7 +192,7 @@ function book_parseContent (parentPath, elements) {
 }
 ```
 
-block Handlers
+Block Handlers
 --------------
 
 ```javascript
@@ -197,8 +203,58 @@ function book_bodyBlock (blockElement, success, failure) {
 }
 ```
 
-Class Definitions
------------------
+Search Source
+-------------
+
+```javascript
+/*
+*/
+function book_index (databaseURL, success, failure) {
+  book_loadDatabase (databaseURL,
+    function (database) {
+      success (database.index ());
+    },
+    failure
+  );
+}
+```
+
+
+The Entry Class
+---------------
+
+```javascript
+/*
+*/
+function book_Entry (id, title, body) {
+  search_Entry.call (this, id);
+  this.title = title;
+  this.body  = body;
+}
+
+/*
+*/
+book_Entry.prototype = Object.create (search_Entry.prototype);
+
+/*
+*/
+book_Entry.prototype.getResultElement = function (done) {
+  done ($('<li></li>')
+    .addClass ('search_result')
+    .addClass ('book_search_result')
+    .addClass ('book_search_page_result')
+    .append (getContentLink (this.id)
+      .addClass ('search_result_link')
+      .addClass ('book_search_link')
+      .addClass ('book_search_page_link')
+      .attr ('href', getContentURL (this.id))
+      .append ($('<h3></h3>').html (this.title))
+      .append ($('<p></p>').text (book_getSnippet (this.body)))));
+}
+```
+
+The Page Class
+--------------
 
 ```javascript
 /*
@@ -215,6 +271,12 @@ book_Page.prototype.getElement = function (id) {
   return this.id === id ? this : null;
 }
 
+book_Page.prototype.index = function () {
+  return [new book_Entry (this.id,
+    $('<div></div>').html (this.title).text (),
+    $('<div></div>').html (this.body).text ())];
+}
+
 /*
 */
 book_Page.prototype.getRawPageTemplate = function (success, failure) {
@@ -224,13 +286,13 @@ book_Page.prototype.getRawPageTemplate = function (success, failure) {
 /*
 */
 book_Page.prototype.getTemplates = function () {
-  return [new template_Page (null, this.id, this.getRawPageTemplate)];
+  return [new template_Page (null, this.id, this.getRawPageTemplate, 'book_page')];
 }
 
 /*
 */
 book_Page.prototype.getMenuElements = function () {
-  return [new menu_Leaf (null, this.id, this.title, this.getRawPageTemplate)];
+  return [new menu_Leaf (null, this.id, this.title, 'book_page')];
 }
 
 /*
@@ -241,13 +303,28 @@ book_Page.prototype.getBodyElement = function () {
     .addClass ('book_page_body')
     .html (this.body);
 }
+```
 
+The Section Class
+-----------------
+
+```javascript
 /*
 */
 function book_Section (id, title, children) {
   this.id       = id;
   this.title    = title;
   this.children = children;
+}
+
+/*
+*/
+book_Section.prototype.index = function () {
+  var entries = [];
+  for (var i = 0; i < this.children.length; i ++) {
+    Array.prototype.push.apply (entries, this.children [i].index ());
+  }
+  return entries;
 }
 
 /*
@@ -272,7 +349,7 @@ book_Section.prototype.getRawSectionTemplate = function (success, failure) {
 */
 book_Section.prototype.getTemplates = function () {
   // I. Create the section template.
-  var sectionTemplate = new template_Section (null, this.id, [], this.getRawSectionTemplate);
+  var sectionTemplate = new template_Section (null, this.id, [], this.getRawSectionTemplate, 'book_section');
 
   // III. Create child templates.
   for (var i = 0; i < this.children.length; i ++) {
@@ -292,7 +369,7 @@ book_Section.prototype.getTemplates = function () {
 */
 book_Section.prototype.getMenuElements = function () {
   // I. Create node element.
-  var node = new menu_Node (null, this.id, this.title, [], this.getRawSectionTemplate);
+  var node = new menu_Node (null, this.id, this.title, [], 'book_section');
 
   // II. Create children elements.
   for (var i = 0; i < this.children.length; i ++) {
@@ -304,7 +381,12 @@ book_Section.prototype.getMenuElements = function () {
   }
   return [node];
 }
+```
 
+The Book Class
+--------------
+
+```javascript
 /*
 */
 function book_Book (id, title, body, children) {
@@ -319,6 +401,19 @@ book_Book.prototype = Object.create (book_Section.prototype);
 /*
 */
 book_Book.prototype.constructor = book_Book;
+
+/*
+*/
+book_Book.prototype.index = function () {
+  var entries = [new book_Entry (this.id,
+    $('<div></div>').html (this.title).text (),
+    $('<div></div>').html (this.body).text ())];
+
+  for (var i = 0; i < this.children.length; i ++) {
+    Array.prototype.push.apply (entries, this.children [i].index ());
+  }
+  return entries;
+}
 
 /*
 */
@@ -345,7 +440,7 @@ book_Book.prototype.getBodyElement = function () {
 */
 book_Book.prototype.getTemplates = function () {
   var templates = book_Section.prototype.getTemplates.call (this);
-  templates.push (new template_Page (null, this.id, this.getRawPageTemplate));
+  templates.push (new template_Page (null, this.id, this.getRawPageTemplate, 'book_book'));
   return templates;
 }
 
@@ -353,10 +448,10 @@ book_Book.prototype.getTemplates = function () {
 */
 book_Book.prototype.getMenuElements = function () {
   // I. Create node element.
-  var node = new menu_Node (null, this.id, this.title, [], this.getRawSectionTemplate);
+  var node = new menu_Node (null, this.id, this.title, [], 'book_book');
 
   // II. Create the leaf element.
-  node.children.push (new menu_Leaf (node, this.id, this.title, this.getRawPageTemplate));
+  node.children.push (new menu_Leaf (node, this.id, this.title, 'book_book'));
 
   // II. Create children elements.
   for (var i = 0; i < this.children.length; i ++) {
@@ -368,11 +463,26 @@ book_Book.prototype.getMenuElements = function () {
   }
   return [node];
 }
+```
 
+The Database Class
+------------------
+
+```javascript
 /*
 */
 function book_Database (books) {
   this.books = books;
+}
+
+/*
+*/
+book_Database.prototype.index = function () {
+  var entries = [];
+  for (var i = 0; i < this.books.length; i ++) {
+    Array.prototype.push.apply (entries, this.books [i].index ());
+  }
+  return entries;
 }
 
 /*
@@ -428,6 +538,16 @@ function book_getId (type, path) {
       uri.segmentCoded (name);
   });
   return uri.toString ();
+}
+
+/*
+  getSnippet accepts an HTML string and returns a
+  snippet of the text contained within the given
+  HTML as a string.
+*/
+function book_getSnippet (text) {
+  return text.length <= book_SNIPPET_LENGTH ? text :
+    text.substr (0, book_SNIPPET_LENGTH) + '...';
 }
 ```
 
@@ -532,7 +652,7 @@ Generating Source Files
 -----------------------
 
 You can generate the Book module's source files using [Literate Programming](https://github.com/jostylr/literate-programming), simply execute:
-`literate-programming Book.md`
+`literate-programming Readme.md`
 from the command line.
 
 <!---
@@ -550,7 +670,17 @@ _"Parse the Database"
 
 _"Block Handlers"
 
-_"Class Definitions"
+_"Search Source"
+
+_"The Entry Class"
+
+_"The Page Class"
+
+_"The Section Class"
+
+_"The Book Class"
+
+_"The Database Class"
 
 _"Auxiliary Functions"
 ```

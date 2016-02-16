@@ -19,50 +19,50 @@ var analytics_SETTINGS_URL = 'modules/analytics/settings.xml';
   page visit event to Google Analytics for the
   current page.
 */
-(function () {
-  // Define the failure event handler.
-  var failure = function () {
-    strictError ('[analytics] Error: an error occured while trying to load the Analytics module.');
-  }
+registerModule (
+  function (done) {
+    // I. Load the configuration settings.
+    analytics_loadSettings (analytics_SETTINGS_URL,
+      function (settings) {
+        // II. Load Google Analytics.
+        // Note: This code was taken verbatim from https://developers.google.com/analytics/devguides/collection/analyticsjs/.
+        (function (i,s,o,g,r,a,m) {
+          i['GoogleAnalyticsObject'] = r;
+          i[r] = i[r] || function () {
+            (i[r].q = i[r].q || []).push (arguments)
+          },
+          i[r].l = 1 * new Date ();
 
-  // I. Load the configuration settings.
-  analytics_loadSettings (analytics_SETTINGS_URL,
-    function (settings) {
-      // II. Load Google Analytics.
-      // Note: This code was taken verbatim from https://developers.google.com/analytics/devguides/collection/analyticsjs/.
-      (function (i,s,o,g,r,a,m) {
-        i['GoogleAnalyticsObject'] = r;
-        i[r] = i[r] || function () {
-          (i[r].q = i[r].q || []).push (arguments)
-        },
-        i[r].l = 1 * new Date ();
+          a = s.createElement (o),
+          m = s.getElementsByTagName (o) [0];
 
-        a = s.createElement (o),
-        m = s.getElementsByTagName (o) [0];
+          a.async = 1;
+          a.src = g;
+          m.parentNode.insertBefore (a,m)
+        })(window,document,'script','http://www.google-analytics.com/analytics.js','ga');
 
-        a.async = 1;
-        a.src = g;
-        m.parentNode.insertBefore (a,m)
-      })(window,document,'script','http://www.google-analytics.com/analytics.js','ga');
+        // III. Create the Property Tracker. 
+        ga('create', settings.pageVisitPropertyId, 'auto');
 
-      // III. Create the Property Tracker. 
-      ga('create', settings.pageVisitPropertyId, 'auto');
+        // IV. Update the Page Visit count.
+        ga('send', 'pageview');
 
-      // IV. Update the Page Visit count.
-      ga('send', 'pageview');
+        // V. Register a Page Load event handler that logs page view events.
+        PAGE_LOAD_HANDLERS.push (
+          function (done, id) {
+            var url = getContentURL (id);
+            ga ('set', 'page', url);
+            ga ('send', 'pageview');
+            done ();
+        });
 
-      // V. Register a Page Load event handler that logs page view events.
-      PAGE_LOAD_HANDLERS.push (
-        function (done, id) {
-          var url = getContentURL (id);
-          ga ('set', 'page', url);
-          ga ('send', 'pageview');
-          done ();
-      });
-    },
-    failure
-  );
-}) ();
+        done ();
+      },
+      function () {
+        strictError ('[analytics] Error: an error occured while trying to load the Analytics module.');
+        done ();
+    });
+});
 
 /*
   analytics_loadSettings accepts three arguments:

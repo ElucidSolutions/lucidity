@@ -1,20 +1,23 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<database>
-  <library>
-    <name>example_library</name>
-    <title>Example Library</title>
-    <description>This is an example library.</description>
-    <collection>
-      <name>example_collection</name>
-      <title>Example Collection</title>
-      <description>This is an example collection.</description>
-      <video>
-	<title>Example Video</title>
-	<description><![CDATA[This is an example video.]]></description>
-	<duration>00:00:00</duration>
-	<url>http://example/video.mp4</url>
-        <transcript>example/transcript.xml</transcript>
-      </video>
-    </collection>
-  </library>
-</database>
+function video_library_loadDatabase (databaseURL, success, failure) {
+  $.get (databaseURL,
+    function (databaseElement) {
+      success (video_library_parseDatabase (databaseElement));
+    },
+    'xml'
+  )
+  .fail (function () {
+    strictError ('[video_library][video_library_loadDatabase] Error: an error occured while trying to load "' + databaseURL + '".');
+    failure ();
+  });
+}
+
+function video_library_parseDatabase (databaseElement) {
+  var database = {};
+  $('database > library', databaseElement).each (
+    function (i, libraryElement) {
+      var library = video_library_parseLibrary (libraryElement);
+      database [library.name] = library;
+  });
+
+  return database;
+}

@@ -21,7 +21,8 @@
   sidr_load is the load event handler for this
   module.
 */
-(function () {
+registerModule (
+  function (done) {
   // I. Load libraries.
   loadScript ('modules/sidr/lib/sidr/jquery.sidr.min.js',
     function () {
@@ -30,8 +31,10 @@
 
       // III. Register the block handlers.
       registerBlockHandler ('sidr_block', sidr_block);
+
+      done ();
   });
-}) ();
+});
 
 /*
   sidr_block accepts two arguments:
@@ -50,6 +53,7 @@
 */
 function sidr_block (blockElement, done) {
   blockElement.sidr ({
+    // displace: false,
     speed: 300
   });
 

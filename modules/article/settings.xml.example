@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <settings>
-  <articles>modules/article/example_articles.xml</articles>
+  <articles>modules/article/database.xml</articles>
 </settings>

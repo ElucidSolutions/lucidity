@@ -18,6 +18,9 @@ The Global Variables
 
 ```javascript
 /*
+  The `menu_Menu` represents the site's global
+  menu as a menu_Menu object.
+
 */
 var menu_MENU = new menu_Menu ([]);
 ```
@@ -27,48 +30,199 @@ The Load Event Handler
 
 ```javascript
 /*
+  The Menu module's load event handler. This
+  function registers the module's block handlers.
 */
-(function () {
-  // I. Register the block handlers.
-  registerBlockHandlers ({
-    menu_contents_block:      menu_contentsBlock,
-    menu_leaf_label_block:    menu_leafLabelBlock,
-    menu_leaf_link_block:     menu_leafLinkBlock,
-    menu_node_label_block:    menu_nodeLabelBlock,
-    menu_node_link_block:     menu_nodeLinkBlock
-  });
-}) ();
+registerModule (
+  function (done) {
+    // I. Register the block handlers.
+    registerBlockHandlers ({
+      menu_contents_block:      menu_contentsBlock,
+      menu_leaf_label_block:    menu_leafLabelBlock,
+      menu_leaf_link_block:     menu_leafLinkBlock,
+      menu_node_label_block:    menu_nodeLabelBlock,
+      menu_node_link_block:     menu_nodeLinkBlock
+    });
+
+    done ();
+});
 ```
 
 The Block Handlers
 ------------------
 
+The Menu module defined five block handlers. The most important of these is the Menu Contents block which returns an HTML element that represents a given menu node.
+
 ```javascript
 /*
+  menu_contentsBlock accepts three arguments:
+
+  * blockElement, a JQuery HTML Element
+
+  * success, a function that accepts a JQuery
+    HTML Element
+
+  * and failure, a function that does not accept
+    any arguments.
+
+  blockElement must be a DIV element that
+  contains six child elements:
+
+  * The first element must belong to the
+    menu_id class and contain a single text node
+    representing a menu element ID.
+
+  * The second element must belong to the
+    menu_num_columns class and contain a single
+    text node specifying the number of columns
+    that the menu element will be divided into.
+
+  * The third element must belong to the
+    menu_max_level class and contain an integer
+    value specifying the maximum number of menu
+    levels to include in the menu element.
+
+  * The fourth element must belong to the
+    max_expand_level class and contains an
+    integer value specifying the maximum number
+    of menu levels to initially display in the
+    menu element.
+
+  * The fifth element must belong to the
+    menu_expandable class and must contain a
+    single boolean value of "true" or "false". This
+    element indicates whether or not users should
+    be able to expand and collapse menu items
+    beyond the max_expand_level.
+
+  * and the sixth element must belong to the
+  menu_selected_element_id class and contain a
+  single text node representing the initially
+  selected element ID.
+  
+
+  menu_contentsBlock:
+
+  * loads the menu node referenced by menu_id
+
+  * creates a new HTML element that represents
+    the node using the settings provided by
+    blockElement
+
+  * replaces blockElement with the new element
+
+  * and passes the element to success.
+
+  If an error occurs, menu_contentsBlock calls
+  failure instead of success.
 */
 function menu_contentsBlock (blockElement, success, failure) {
   menu_MENU.getContentsBlock (blockElement, success, failure);
 }
 
 /*
+  menu_leafLabelBlock accepts three arguments:
+
+  * blockElement, a JQuery HTML Element
+  * success, a function that accepts a JQuery
+    HTML Element
+  * and failure, a function that does not accept
+    any arguments.
+
+  blockElement must contain a single text node
+  that represents a Menu Element ID.
+
+  menu_leafLabelBlock:
+
+  * loads referenced menu element
+  * creates an HTML element that represents the
+    element's title
+  * replaces blockElement with the new element
+  * and passes the new element to success.
+
+  If an error occurs, menu_leafLabelBlock calls
+  failure instead of success.
 */
 function menu_leafLabelBlock (blockElement, success, failure) {
   menu_MENU.getLeafLabelBlock (blockElement, success, failure);
 }
 
 /*
+  menu_leafLabelBlock accepts three arguments:
+
+  * blockElement, a JQuery HTML Element
+  * success, a function that accepts a JQuery
+    HTML Element
+  * and failure, a function that does not accept
+    any arguments.
+
+  blockElement must contain a single text node
+  that represents a Menu Element ID.
+
+  menu_leafLinkBlock:
+
+  * loads the referenced menu element
+  * creates an HTML link element that represents
+    the menu element's title
+  * replaces blockElement with the new element
+  * and passes the new element to success.
+
+  If an error occurs, menu_leafLinkBlock calls
+  failure instead of success.
 */
 function menu_leafLinkBlock (blockElement, success, failure) {
   menu_MENU.getLeafLinkBlock (blockElement, success, failure);
 }
 
 /*
+  menu_nodeLabelBlock accepts three arguments:
+
+  * blockElement, a JQuery HTML Element
+  * success, a function that accepts a JQuery
+    HTML Element
+  * and failure, a function that does not accept
+    any arguments.
+
+  blockElement must contain a single text node
+  that represents a Menu Element ID.
+
+  menu_nodeLabelBlock:
+
+  * loads the referenced menu element
+  * creates an HTML link element that represents
+    the menu element's title
+  * replaces blockElement with the new element
+  * and passes the new element to success.
+
+  If an error occurs, menu_nodeLabelBlock calls
+  failure instead of success.
 */
 function menu_nodeLabelBlock (blockElement, success, failure) {
   menu_MENU.getNodeLabelBlock (blockElement, success, failure);
 }
 
 /*
+  menu_nodeLinkBlock accepts three arguments:
+
+  * blockElement, a JQuery HTML Element
+  * success, a function that accepts a JQuery
+    HTML Element
+  * and failure, a function that does not accept
+    any arguments.
+
+  blockElement must contain a single text node
+  that represents a Menu Element ID.
+
+  menu_nodeLinkBlock:
+
+  * loads the referenced menu element
+  * creates an HTML link element that represents
+    the menu element's title
+  * replaces blockElement with the new element
+  * and passes the new element to success.
+
+  If an error occurs, menu_nodeLinkBlock calls
+  failure instead of success.
 */
 function menu_nodeLinkBlock (blockElement, success, failure) {
   menu_MENU.getNodeLinkBlock (blockElement, success, failure);
@@ -82,26 +236,53 @@ The Element class defines a base class for both the Leaf and Node classes.
 
 ```javascript
 /*
+  The menu_Element class is a base class for both
+  the menu_Leaf and menu_Node classes. It
+  represents generic menu elements.
+
+  The menu_Element function accepts four
+  arguments:
+
+  * parent, a menu_Element
+  * id, a Menu Element ID
+  * title, a string
+  * and classes, a string.
+
+  Note: If parent is not null, it must be a
+  menu Node that contains this element in its
+  children array.
 */
-function menu_Element (parent, id, title) {
+function menu_Element (parent, id, title, classes) {
   this.parent         = parent;
   this.id             = id;
   this.title          = title;
+  this.classes        = classes;
 }
 
 /*
+  getFirstLeaf returns the first menu_Leaf within
+  the menu tree represented by this element.
 */
 // menu_Element.prototype.getFirstLeaf = function () {}
 
 /*
+  getNode accepts a Menu Element ID and returns
+  the first menu_Node within the menu tree
+  represented by this element that has the
+  given ID.
 */
 // menu_Element.prototype.getNode = function (id) {}
 
 /*
+  getLeaf accepts a Menu Element ID and returns
+  the first menu_Leaf within the menu tree
+  represented by this element that has the
+  given ID.
 */
 // menu_Element.prototype.getLeaf = function (id) {}
 
 /*
+  getLinkElement returns a JQuery HTML Element that represents a link
 */
 // menu_Element.prototype.getLinkElement = function () {}
 
@@ -140,6 +321,7 @@ menu_Element.prototype.getLine = function () {
 */
 menu_Element.prototype.addAttributes = function (element) {
   return element
+    .addClass (this.classes)
     .attr ('data-menu-id', this.id)
     .attr ('data-menu-level', this.getLevel ());
 }
@@ -180,8 +362,8 @@ The Leaf class defines the basic block elements and functions for leaves.
 ```javascript
 /*
 */
-function menu_Leaf (parent, id, title) {
-  menu_Element.call (this, parent, id, title);
+function menu_Leaf (parent, id, title, classes) {
+  menu_Element.call (this, parent, id, title, classes);
 }
 
 /*
@@ -239,8 +421,8 @@ Nodes are elements that may contain other elements.
 ```javascript
 /*
 */
-function menu_Node (parent, id, title, children) {
-  menu_Element.call (this, parent, id, title);
+function menu_Node (parent, id, title, children, classes) {
+  menu_Element.call (this, parent, id, title, classes);
   this.children = children;
 }
 
@@ -387,6 +569,66 @@ menu_Menu.prototype.getNodeLinkBlock = function (blockElement, success, failure)
 }
 
 /*
+  getContentsBlock accepts three arguments:
+
+  * blockElement, a JQuery HTML Element
+
+  * success, a function that accepts a JQuery
+    HTML Element
+
+  * and failure, a function that does not accept
+    any arguments.
+
+  blockElement must be a DIV element that
+  contains six child elements:
+
+  * The first element must belong to the
+    menu_id class and contain a single text node
+    representing a menu element ID.
+
+  * The second element must belong to the
+    menu_num_columns class and contain a single
+    text node specifying the number of columns
+    that the menu element will be divided into.
+
+  * The third element must belong to the
+    menu_max_level class and contain an integer
+    value specifying the maximum number of menu
+    levels to include in the menu element.
+
+  * The fourth element must belong to the
+    max_expand_level class and contains an
+    integer value specifying the maximum number
+    of menu levels to initially display in the
+    menu element.
+
+  * The fifth element must belong to the
+    menu_expandable class and must contain a
+    single boolean value of "true" or "false". This
+    element indicates whether or not users should
+    be able to expand and collapse menu items
+    beyond the max_expand_level.
+
+  * and the sixth element must belong to the
+  menu_selected_element_id class and contain a
+  single text node representing the initially
+  selected element ID.
+  
+
+  getContentsBlock:
+
+  * loads the menu node referenced by menu_id
+
+  * creates a new HTML element that represents
+    the node using the settings provided by
+    blockElement
+
+  * replaces blockElement with the new element
+
+  * and passes the element to success.
+
+  If an error occurs, getContentsBlock calls
+  failure instead of success.
 */
 menu_Menu.prototype.getContentsBlock = function (blockElement, success, failure) {
   var self = this;
@@ -537,7 +779,7 @@ Generating Source Files
 -----------------------
 
 You can generate the Menu module's source files using [Literate Programming](https://github.com/jostylr/literate-programming), simply execute:
-`literate-programming Menu.md`
+`literate-programming Readme.md`
 from the command line.
 
 <!---

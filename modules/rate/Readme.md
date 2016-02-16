@@ -32,14 +32,17 @@ The module's load event handler simply registers the module's block handlers. Th
   The module's load event handler. This function
   registers the module's block handlers.
 */
-(function () {
-  // I. Register the block handlers.
-  registerBlockHandlers ({
-    rate_block:           'modules/rate/templates/rate_block.html',
-    rate_up_vote_block:   rate_upVoteBlock,
-    rate_down_vote_block: rate_downVoteBlock
-  });
-}) ();
+registerModule (
+  function (done) {
+    // I. Register the block handlers.
+    registerBlockHandlers ({
+      rate_block:           'modules/rate/templates/rate_block.html',
+      rate_up_vote_block:   rate_upVoteBlock,
+      rate_down_vote_block: rate_downVoteBlock
+    });
+
+    done ();
+});
 ```
 
 ### The Rate Block Handler
@@ -131,7 +134,7 @@ function rate_downVoteBlock (blockElement, done) {
 
 ### Generating Source Files
 
-The Rate module's source files can be generated from this article using [Literate Programming](https://github.com/jostylr/literate-programming). To generate these source files, simply execute: `literate-programming Rate.md` from the command line.
+The Rate module's source files can be generated from this article using [Literate Programming](https://github.com/jostylr/literate-programming). To generate these source files, simply execute: `literate-programming Readme.md` from the command line.
 
 <!--
 #### Rate.js
