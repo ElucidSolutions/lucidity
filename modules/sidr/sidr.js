@@ -53,7 +53,7 @@ registerModule (
 */
 function sidr_block (blockElement, done) {
   blockElement.sidr ({
-    // displace: false,
+    displace: false,
     speed: 300
   });
 
