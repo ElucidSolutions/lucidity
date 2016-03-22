@@ -12,18 +12,20 @@
   bxslider_load is the load event handler for this
   module.
 */
-registerModule (
+MODULE_LOAD_HANDLERS.add (
   function (done) {
     // I. Load libraries.
     loadScript ('modules/bxslider/lib/jquery.bxslider/jquery.bxslider.js',
-      function () {
+      function (error) {
+        if (error) { return done (error); }
+
         // II. Load CSS files.
         $.getCSS ('modules/bxslider/lib/jquery.bxslider/jquery.bxslider.css');
 
         // III. Register the block handler.
-        registerBlockHandler ('bxslider_block', bxslider_block);
+        block_HANDLERS.add ('bxslider_block', bxslider_block);
 
-        done ();
+        done (null);
       });
 });
 
@@ -33,11 +35,11 @@ registerModule (
   the bxSlider element after all of the blocks that
   have been nested within it have been expanded.
 */
-function bxslider_block (blockElement, done) {
-  $('> .bxslider', blockElement).bxSlider({
+function bxslider_block (context, done) {
+  $('> .bxslider', context.element).bxSlider({
     auto : true,
     autoControls : true,
     pause : 10000
   });
-  done ();
+  done (null);
 }
