@@ -28,15 +28,6 @@ function block_HandlerStore () {
   }
 
   /*
-    Accepts no arguments and returns a string
-    array listing the registered block class
-    names.
-  */
-  this.getClassNames = function () {
-    return Object.keys (_handlers);
-  }
-
-  /*
     Accepts two arguments:
 
     * className, a string that represents an
@@ -99,10 +90,7 @@ function block_Context (id, element) {
 MODULE_LOAD_HANDLERS.add (
   function (done) {
     // I. Register the core block handlers.
-    block_HANDLERS.addHandlers ({
-      'core_id_block':        block_idBlock,
-      'block_template_block': block_templateBlock
-    });
+    block_HANDLERS.add ('block_template_block', block_templateBlock);
 
     // II. Continue.
     done (null);
@@ -168,14 +156,16 @@ function block_expandBlock (context, done) {
   if (!context || !context.element) { return done (); }
 
   var id = context.getId ();
-  async.mapSeries (
-    block_getNestedBlocks (block_HANDLERS.getClassNames (), context.element),
-    function (nestedBlockElement, next) {
-      block_expandBlock (new block_Context (id, nestedBlockElement), next);
-    },
-    function (error) {
-      if (error) { return done (error); }
 
+  // I. Expand Core Id blocks.
+  if (context.element.hasClass ('core_id_block')) {
+    context.element.replaceWith (id);
+    return done ();
+  }
+
+  block_expandBlocks (id,
+    context.element.children (),
+    function () {
       var blockHandler = block_getHandler (block_HANDLERS, context.element);
       if (blockHandler) {
         // Remove the block handler's class.
@@ -194,34 +184,45 @@ function block_expandBlock (context, done) {
 }
 
 /*
-  Accepts two arguments:
+  expandBlocks accepts three arguments:
 
-  * classNames, a string array
-  * and element, a JQuery HTML Element
+  * id, an Id string
+  * elements, a JQuery HTML Element Set
+  * and done, a function that does not accept any
+    arguments.
 
-  and returns the elements in element that have
-  a class name listed in classNames as a JQuery
-  HTML Element array.
-
-  Unlike a JQuery selector, this function
-  does not include the descendants of returned
-  elements.
+  expandBlocks expands the blocks within elements
+  and calls done.
 */
-function block_getNestedBlocks (classNames, element) {
-  var blocks = [];
-  element.children ().each (
-    function (i, child) {
-      child = $(child);
-      var childClassNames = block_getClassNames (child);
-      for (var i = 0; i < childClassNames.length; i ++) {
-        var className = childClassNames [i];
-        if (classNames.indexOf (className) !== -1) {
-          return blocks.push (child);
-        }
-      }
-      Array.prototype.push (blocks, block_getNestedBlocks (classNames, child));
+function block_expandBlocks (id, elements, done) {
+  _block_expandBlocks (0, id, elements, done);
+}
+
+/*
+  _expandBlocks accepts four arguments:
+
+  * elementIndex, a positive integer
+  * id, an Id string
+  * elements, JQuery HTML Element Set
+  * and done, a function that does not accept any
+    arguments.
+
+  _expandBlocks starts at elementIndex and
+  iterates over the remaining elements in elements
+  expanding any blocks contained within each. Once
+  done, _expandBlocks calls done.
+*/
+function _block_expandBlocks (elementIndex, id, elements, done) {
+  // I. Call done when all of the elements have been expanded.
+  if (elementIndex >= elements.length) {
+    return done ();
+  }
+  // II. Expand the current element.
+  block_expandBlock (new block_Context (id, elements.eq (elementIndex)),
+    function () {
+      // III. Expand the remaining elements.
+      _block_expandBlocks (elementIndex + 1, id, elements, done);
   });
-  return blocks;
 }
 
 /*
@@ -245,7 +246,7 @@ function block_getNestedBlocks (classNames, element) {
 */
 function block_getHandler (handlers, element) {
   // I. Get the set of possible block names.
-  var names = block_getClassNames (element);
+  var names = getClassNames (element);
 
   // II. Find the first handler in handlers associated with one of the names.
   for (var nameIndex = 0; nameIndex < names.length; nameIndex ++) {
@@ -289,26 +290,10 @@ function block_applyBlockHandler (handler, context, done) {
 }
 
 /*
-  block_idBlock accepts two arguments:
+  block_templateBlock accepts three arguments:
 
   * context, a Block Expansion Context
-  * and done, a function that accepts two
-    arguments: an Error object and a JQuery
-    HTML Element
-
-  replaces context.element with context's page
-  id and calls done.
-*/
-function block_idBlock (context, done) {
-  context.element.replaceWith (context.getId ());
-  return done ();
-}
-
-/*
-  block_templateBlock accepts two arguments:
-
-  * context, a Block Expansion Context
-  * and done, a function that accepts two
+  * done, a function that accepts two
     arguments: an Error object and a JQuery
     HTML Element
 
@@ -361,11 +346,11 @@ function getBlockArguments (schema, rootElement, done) {
 }
 
 /*
-  block_getClassNames accepts a JQuery HTML
-  Element, element, and returns a string array
-  listing element's class names.
+  getClassNames accepts a JQuery HTML Element,
+  element, and returns a string array listing
+  element's class names.
 */
-function block_getClassNames (element) {
+function getClassNames (element) {
   var classNames = element.attr ('class');
   return classNames ? classNames.split (/\s+/) : [];
 }
