@@ -24,11 +24,13 @@ var video_LOAD_HANDLERS = {};
   registers this module's block handlers with the
   system.
 */
-registerModule (
+MODULE_LOAD_HANDLERS.add (
   function (done) {
     // I. Load libraries.
     loadScript ('modules/video/lib/video-js/video.js',
-      function () {
+      function (error) {
+        if (error) { return done (error); }
+
         // II. Load the CSS files.
         $.getCSS ('modules/video/lib/video-js/video-js.css');
 
@@ -36,12 +38,12 @@ registerModule (
         videojs.options.flash.swf = 'modules/video/lib/video-js/video-js.swf';
 
         // III. Register the block handlers.
-        registerBlockHandlers ({
+        block_HANDLERS.addHandlers ({
           video_player_block:  video_playerBlock,
           video_example_block: 'modules/video/templates/example_block.html'
         });
 
-        done ();
+        done (null);
     });    
 });
 
@@ -61,8 +63,8 @@ registerModule (
   element using the VideoJS library and calls
   continuation.
 */
-function video_playerBlock (blockElement, done) {
-  var playerElement = $('> video', blockElement);
+function video_playerBlock (context, done) {
+  var playerElement = $('> video', context.element);
 
   var playerElementId = null;
   if (playerElement.attr ('id')) {
@@ -72,7 +74,7 @@ function video_playerBlock (blockElement, done) {
     playerElement.attr ('id', playerElementId);
   }
 
-  blockElement.addClass ('video_player');
+  context.element.addClass ('video_player');
 
   var player = video_PLAYERS [playerElementId];
   if (player) {
@@ -83,12 +85,13 @@ function video_playerBlock (blockElement, done) {
     video_PLAYERS [playerElementId] = this;
 
     var handlers = video_LOAD_HANDLERS [playerElementId];
-    for (var i = 0; i < handlers.length; i ++) {
-      var handler = handlers [i];
-      handler (this);
+    if (handlers) {
+      for (var i = 0; i < handlers.length; i ++) {
+        var handler = handlers [i];
+        handler (this);
+      }
     }
-
-    done ();
+    done (null);
   });
 }
 

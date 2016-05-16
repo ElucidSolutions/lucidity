@@ -10,11 +10,13 @@
   This function loads the Lightbox2 library and
   its associated stylesheets.
 */
-registerModule (
+MODULE_LOAD_HANDLERS.add (
   function (done) {
     // I. Load the Lightbox2 library.
     loadScript ('modules/lightbox/lib/lightbox2/dist/js/lightbox.js',
-      function () {
+      function (error) {
+        if (error) { return done (error); }
+
         // II. Load the CSS files.
         $.getCSS ('modules/lightbox/lib/lightbox2/dist/css/lightbox.css');
 
@@ -23,6 +25,7 @@ registerModule (
           positionFromTop: 200
         });
 
-        done ();
+        // IV. Continue.
+        done (null);
     });
 });

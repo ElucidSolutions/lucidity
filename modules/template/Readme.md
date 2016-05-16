@@ -8,55 +8,6 @@ The Template module allows other modules to define and nested templates.
 */
 ```
 
-The Global Variables
---------------------
-
-```javascript
-/*
-*/
-var template_TEMPLATES = [];
-```
-
-The Template Registration Functions
------------------------------------
-
-```javascript
-/*
-*/
-function template_registerTemplate (template) {
-  template_TEMPLATES.push (template);
-}
-
-/*
-*/
-function template_registerTemplates (templates) {
-  for (var i = 0; i < templates.length; i ++) {
-    template_registerTemplate (templates [i]);
-  }
-}
-```
-
-The Page Handler Function
--------------------------
-
-```javascript
-/*
-*/
-function template_page (id, success, failure) {
-  var errorMsg = '[template][template_page] Error: an error occured while trying to load page template "' + id + '".';
-  var template = template_getPageTemplate (id);
-  if (!template) {
-    strictError (errorMsg + ' The template does not exist.');
-    return failure ();
-  }
-  if (!template.getPageElement) {
-    strictError (errorMsg + ' The template is not a page template.');
-    return failure ();
-  }
-  template.getPageElement (success, failure);
-}
-```
-
 The Template Class
 ------------------
 
@@ -68,11 +19,16 @@ function template_Template (parent, id, getRawElement, classes) {
   this.id            = id;
   this.getRawElement = getRawElement;
   this.classes       = classes;
+
 }
 
 /*
 */
 // template_Template.prototype.getPageTemplate = function (id) {}
+
+/*
+*/
+// template_Template.prototype.getSectionTemplate = function (id) {}
 
 /*
 */
@@ -107,17 +63,23 @@ template_Template.prototype.getLevel = function () {
 
 /*
 */
-template_Template.prototype.getElement = function (success, failure) {
+template_Template.prototype.iterate = function (templateFunction) {
+  templateFunction (this);
+}
+
+/*
+*/
+template_Template.prototype.getElement = function (done) {
   var self = this;
   this.getRawElement (
-    function (rawTemplate) {
-      success (rawTemplate
+    function (error, rawTemplate) {
+      if (error) { return done (error); }
+
+      done (null, rawTemplate
         .addClass (self.classes)
         .attr ('data-template-id', self.id)
         .attr ('data-template-level', self.getLevel ()));
-    },
-    failure
-  );
+  });
 }
 ```
 
@@ -147,41 +109,46 @@ template_Page.prototype.getPageTemplate = function (id) {
 
 /*
 */
-template_Page.prototype.getElement = function (success, failure) {
-  template_Template.prototype.getElement.call (this,
-    function (template) {
-      success (template.addClass ('template_page'));
-    },
-    failure
-  );
+template_Page.prototype.getSectionTemplate = function (id) {
+  return null;
 }
 
 /*
 */
-template_Page.prototype.getPageElement = function (success, failure) {
+template_Page.prototype.getElement = function (done) {
+  template_Template.prototype.getElement.call (this,
+    function (error, template) {
+      if (error) { return done (error); }
+
+      done (null, template.addClass ('template_page'));
+  });
+}
+
+/*
+*/
+template_Page.prototype.getPageElement = function (done) {
   var templates = this.getPath ().reverse ();
   var pageTemplate = templates.shift ();
   pageTemplate.getElement (
-    function (pageElement) {
-      fold (
-        function (element, sectionTemplate, success, failure) {
+    function (error, pageElement) {
+      if (error) { return done (error); }
+
+      async.reduce (
+        templates,
+        pageElement,
+        function (element, sectionTemplate, next) {
           sectionTemplate.getElement (
-            function (sectionElement) {
+            function (error, sectionElement) {
+              if (error) { return next (error); }
+
               $('.template_id_block', sectionElement).replaceWith (sectionTemplate.id);
               $('.template_hole_block', sectionElement).replaceWith (element);
-              success (sectionElement);
-            },
-            failure
-          );
+              next (null, sectionElement);
+          });
         },
-        pageElement,
-        templates,
-        success,
-        failure
+        done
       );
-    },
-    failure
-  );
+  });
 }
 ```
 
@@ -212,13 +179,137 @@ template_Section.prototype.getPageTemplate = function (id) {
 
 /*
 */
-template_Section.prototype.getElement = function (success, failure) {
+template_Section.prototype.getSectionTemplate = function (id) {
+  return this.id === id ? this : template_findSectionTemplate (id, this.children);
+}
+
+/*
+*/
+template_Section.prototype.iterate = function (templateFunction) {
+  templateFunction (this);
+  for (var i = 0; i < this.children.length; i ++) {
+    this.children [i].iterate (templateFunction);
+  }
+}
+
+/*
+*/
+template_Section.prototype.getElement = function (done) {
   template_Template.prototype.getElement.call (this,
+    function (error, template) {
+      if (error) { return done (error); }
+
+      done (null, template.addClass ('template_section'));
+  });
+}
+```
+
+The Template Store Class
+------------------------
+
+```javascript
+/*
+  Template Stores store registered templates.
+*/
+function template_TemplateStore () {
+  var self = this;
+
+  /*
+  */
+  var _templates = [];
+
+  /*
+  */
+  var _templateFunctions = {};
+
+  /*
+  */
+  var addTemplateFunction = function (id, templateFunction) {
+    if (!_templateFunctions [id]) { _templateFunctions [id] = []; }
+    _templateFunctions [id].push (templateFunction);
+  }
+
+  /*
+  */
+  this.add = function (template) {
+    // I. Add the template to the store.
+    _templates.push (template);
+
+    // II. Call template functions on the added templates.
+    template.iterate (
+      function (template) {
+        var id = template.id;
+        var templateFunctions = _templateFunctions [id];
+        if (templateFunctions) {
+          for (var i = 0; i < templateFunctions.length; i ++) {
+            (templateFunctions [i]) (template);
+          }
+        }
+    });
+  }
+
+  /*
+  */
+  this.addTemplates = function (templates) {
+    for (var i = 0; i < templates.length; i ++) {
+      self.add (templates [i]);
+    }
+  }
+
+  /*
+  */
+  this.getPageTemplate = function (id, templateFunction) {
+    var template = template_findPageTemplate (id, _templates);
+    template ? templateFunction (template) : addTemplateFunction (id, templateFunction);
+  }
+
+  /*
+  */
+  this.getSectionTemplate = function (id, templateFunction) {
+    var template = template_findSectionTemplate (id, _templates);
+    template ? templateFunction (template) : addTemplateFunction (id, templateFunction);
+  }
+}
+```
+
+The Template Store
+------------------
+
+```javascript
+/*
+  A template_TemplateStore that stores all of
+  the registered templates.
+*/
+var template_TEMPLATES = new template_TemplateStore ();
+```
+
+The Load Event Handler
+----------------------
+
+```javascript
+/*
+*/
+MODULE_LOAD_HANDLERS.add (
+  function (done) {
+    // I. Register the Page Handler.
+    page_HANDLERS.add ('template_page', template_page);
+
+    // II. Continue.
+    done (null);
+});
+```
+
+The Page Handler
+----------------
+
+```javascript
+/*
+*/
+function template_page (id, done) {
+  template_TEMPLATES.getPageTemplate (id,
     function (template) {
-      success (template.addClass ('template_section'));
-    },
-    failure
-  );
+      template.getPageElement (done);
+  });
 }
 ```
 
@@ -238,8 +329,12 @@ function template_findPageTemplate (id, templates) {
 
 /*
 */
-function template_getPageTemplate (id) {
-  return template_findPageTemplate (id, template_TEMPLATES);
+function template_findSectionTemplate (id, templates) {
+  for (var i = 0; i < templates.length; i ++) {
+    var template = templates [i].getSectionTemplate (id);
+    if (template) { return template; }
+  }
+  return null;
 }
 ```
 
@@ -255,17 +350,19 @@ from the command line.
 ```
 _"Template Module"
 
-_"The Global Variables"
-
-_"The Template Registration Functions"
-
-_"The Page Handler Function"
-
 _"The Template Class"
 
 _"The Page Template Class"
 
 _"The Section Template Class"
+
+_"The Template Store Class"
+
+_"The Template Store"
+
+_"The Load Event Handler"
+
+_"The Page Handler"
 
 _"Auxiliary Functions"
 ```
