@@ -90,7 +90,10 @@ function block_Context (id, element) {
 MODULE_LOAD_HANDLERS.add (
   function (done) {
     // I. Register the core block handlers.
-    block_HANDLERS.add ('block_template_block', block_templateBlock);
+    block_HANDLERS.addHandlers ({
+      'core_id_block':        block_IDBlock,
+      'block_template_block': block_templateBlock
+    });
 
     // II. Continue.
     done (null);
@@ -157,14 +160,8 @@ function block_expandBlock (context, done) {
 
   var id = context.getId ();
 
-  // I. Expand Core Id blocks.
-  if (context.element.hasClass ('core_id_block')) {
-    context.element.replaceWith (id);
-    return done ();
-  }
-
   block_expandBlocks (id,
-    context.element.children (),
+    block_getBlockElementsInElements (block_HANDLERS, context.element.children ()), 
     function () {
       var blockHandler = block_getHandler (block_HANDLERS, context.element);
       if (blockHandler) {
@@ -187,7 +184,7 @@ function block_expandBlock (context, done) {
   expandBlocks accepts three arguments:
 
   * id, an Id string
-  * elements, a JQuery HTML Element Set
+  * elements, a JQuery HTML Element array
   * and done, a function that does not accept any
     arguments.
 
@@ -203,7 +200,7 @@ function block_expandBlocks (id, elements, done) {
 
   * elementIndex, a positive integer
   * id, an Id string
-  * elements, JQuery HTML Element Set
+  * elements, JQuery HTML Element array
   * and done, a function that does not accept any
     arguments.
 
@@ -218,11 +215,52 @@ function _block_expandBlocks (elementIndex, id, elements, done) {
     return done ();
   }
   // II. Expand the current element.
-  block_expandBlock (new block_Context (id, elements.eq (elementIndex)),
+  block_expandBlock (new block_Context (id, elements [elementIndex]),
     function () {
       // III. Expand the remaining elements.
       _block_expandBlocks (elementIndex + 1, id, elements, done);
   });
+}
+
+/*
+  Accepts two arguments:
+
+  * handlers, a Handler Store
+  * and elements, a JQuery HTML Element Set.
+
+  and returns the block elements nested within
+  elements as a JQuery HTML Element array.
+*/
+function block_getBlockElementsInElements (handlers, elements) {
+  var blockElements = [];
+  for (var i = 0; i < elements.length; i ++) {
+    Array.prototype.push.apply (blockElements, block_getBlockElements (handlers, $(elements.get (i))));
+  }
+  return blockElements;
+}
+
+/*
+  Accepts two arguments:
+
+  * handlers, a Handler Store
+  * and element, a JQuery HTML Element.
+
+  If element is a block element, this
+  function returns a singleton array containing
+  element. Otherwise, this function returns
+  the block elements nested within element as
+  a JQuery HTML Element array.
+
+  Note: this function does not recurse over
+  block elements.
+*/
+function block_getBlockElements (handlers, element) {
+  var handler = block_getHandler (handlers, element);
+  if (handler) {
+    return [element];
+  }
+
+  return handler ? [element] : block_getBlockElementsInElements (handlers, element.children ());
 }
 
 /*
@@ -287,6 +325,22 @@ function block_applyBlockHandler (handler, context, done) {
       strictError (error);
       return done (error);
   }
+}
+
+/*
+  Accepts two arguments:
+
+  * context, a Block Expansion Context
+  * and done, a function that accepts two
+    arguments: an Error object and a JQuery
+    HTML Element
+
+  and replaces context.element with the current
+  context page ID.
+*/
+function block_IDBlock (context, done) {
+  context.element.replaceWith (context.getId ());
+  done (null);
 }
 
 /*
