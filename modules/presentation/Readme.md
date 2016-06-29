@@ -99,8 +99,30 @@ MODULE_LOAD_HANDLERS.add (
                 done ();
             });
 
-            // VII. Continue.
-            done (null);
+            // VII. Wait for Responsive Voice and continue.
+            if (responsiveVoice) {
+              var responsiveVoiceTimedOut = null;
+              setTimeout (
+                function () {
+                  if (responsiveVoiceTimedOut === null) {
+                    responsiveVoiceTimedOut = true;
+                    responsiveVoice = null;
+                    console.log ('Warning: The Responsive Voice library failed to load before the timeout. Audio playback has been disabled.');
+                    done (null);
+                  }
+                }, 500
+              );
+
+              responsiveVoice.addEventListener ('OnLoad',
+                function () {
+                  if (responsiveVoiceTimedOut === null) {
+                    responsiveVoiceTimedOut = false;
+                    done (null);
+                  }
+               });
+            } else {
+              done (null);
+            }
         });      
   });
 });
@@ -144,6 +166,80 @@ function presentation_block (context, done) {
 }
 ```
 
+The Previous Input View Class
+-----------------------------
+
+The Presentation module allows users to enter input into Input steps. This input can be displayed in other steps using Previous Input View elements. Every Input View element is associated with two step instances, the step on which the view is displayed and the input step whose value it shows.
+
+The abstract information about Previous Input View elements is represented by <code>presentation_PreviousInputView</code> classes.
+
+```javascript
+/*
+  Accepts five arguments:
+
+  * inputStepId, a Presentation Step ID string
+  * top, a CSS Dimension string
+  * left, a CSS Dimension string
+  * width, a CSS Dimension string
+  * and height, a CSS Dimension string
+
+  and returns a presentation_PreviousInputView
+  object.
+*/
+function presentation_PreviousInputView (inputStepId, top, left, width, height) {
+  this.inputStepId = inputStepId;
+  this.top         = top;
+  this.left        = left;
+  this.width       = width;
+  this.height      = height;
+}
+
+/*
+  Accepts two arguments:
+
+  * presentationPath, a string array
+  * and element, a JQuery HTML Element.
+
+  element must be a Previous Input View XML
+  Element.
+
+  presentationPath must be a path giving this
+  view's presentation's location within the
+  database.
+
+  This function returns the Previous Input View
+  represented by element.
+*/
+function presentation_parsePreviousInputView (presentationPath, element) {
+  return new presentation_PreviousInputView (
+    presentation_getId ('presentation_input_step_page', presentationPath.concat ($('> inputStepName', element).text ())),
+    $('> top',      element).text (),
+    $('> left',     element).text (),
+    $('> width',    element).text (),
+    $('> height',   element).text ()
+  );
+}
+
+/*
+  Accepts two arguments:
+
+  * presentationPath, a string array
+  * and element, a JQuery HTML Element that
+    represents a Previous Input Views XML
+    Element
+
+  and returns the Previous Input Views
+  represented in element as a
+  presentation_PreviousInputView array.
+*/
+function presentation_parsePreviousInputViews (presentationPath, element) {
+  return $('> previousInputView', element).map (
+    function (i, viewElement) {
+      return presentation_parsePreviousInputView (presentationPath, viewElement);
+  }).toArray ();
+}
+```
+
 The Step Class
 --------------
 
@@ -151,7 +247,7 @@ The <code>presentation_Step</code> class defines the abstract base class for the
 
 ```javascript
 /*
-  Accepts eight arguments:
+  Accepts nine arguments:
 
   * id, an Presentation Step ID string
   * image, a URL string
@@ -162,7 +258,9 @@ The <code>presentation_Step</code> class defines the abstract base class for the
   * top, a CSS Dimension string
   * left, a CSS Dimension string
   * width, a CSS Dimension string
-  * and height, a CSS Dimension string
+  * height, a CSS Dimension string
+  * and previousInputViews, a
+    presentation_PreviousInputView array
 
   and returns a presentation_Step whose
   background image is given by image, main prompt
@@ -172,15 +270,16 @@ The <code>presentation_Step</code> class defines the abstract base class for the
   positioned near the focus element according
   to position.
 */
-function presentation_Step (id, image, text, position, top, left, width, height) {
-  this.id        = id;
-  this.image     = image;
-  this.text      = text;
-  this.position  = position;
-  this.top       = top;
-  this.left      = left;
-  this.width     = width;
-  this.height    = height;
+function presentation_Step (id, image, text, position, top, left, width, height, previousInputViews) {
+  this.id                 = id;
+  this.image              = image;
+  this.text               = text;
+  this.position           = position;
+  this.top                = top;
+  this.left               = left;
+  this.width              = width;
+  this.height             = height;
+  this.previousInputViews = previousInputViews;
 }
 
 /*
@@ -228,7 +327,7 @@ The <code>presentation_BlankStep</code> class is the simplest step class. It sim
 
 ```javascript
 /*
-  Accepts eight arguments:
+  Accepts nine arguments:
 
   * id, an Presentation Step ID string
   * image, a URL string
@@ -239,13 +338,15 @@ The <code>presentation_BlankStep</code> class is the simplest step class. It sim
   * top, a CSS Dimension string
   * left, a CSS Dimension string
   * width, a CSS Dimension string
-  * and height, a CSS Dimension string
+  * height, a CSS Dimension string
+  * and previousInputViews, a
+    presentation_PreviousInputView array
 
   and returns a presentation_BlankStep. See
   presentation_Step for more details.
 */
-function presentation_BlankStep (id, image, text, position, top, left, width, height) {
-  presentation_Step.call (this, id, image, text, position, top, left, width, height);
+function presentation_BlankStep (id, image, text, position, top, left, width, height, previousInputViews) {
+  presentation_Step.call (this, id, image, text, position, top, left, width, height, previousInputViews);
 }
 
 /*
@@ -293,7 +394,8 @@ function presentation_parseBlankStep (presentationPath, element) {
     $('> top',      element).text (),
     $('> left',     element).text (),
     $('> width',    element).text (),
-    $('> height',   element).text ()
+    $('> height',   element).text (),
+    presentation_parsePreviousInputViews (presentationPath, $('> previousInputViews', element))
   );
 }
 ```
@@ -305,7 +407,7 @@ The Button Step Class
 
 ```javascript
 /*
-  Accepts eight arguments:
+  Accepts nine arguments:
 
   * id, an Presentation Step ID string
   * image, a URL string
@@ -316,13 +418,15 @@ The Button Step Class
   * top, a CSS Dimension string
   * left, a CSS Dimension string
   * width, a CSS Dimension string
-  * and height, a CSS Dimension string
+  * height, a CSS Dimension string
+  * and previousInputViews, a
+    presentation_PreviousInputView array
 
   and returns a presentation_ButtonStep. See
   presentation_Step for more details.
 */
-function presentation_ButtonStep (id, image, text, position, top, left, width, height) {
-  presentation_Step.call (this, id, image, text, position, top, left, width, height);
+function presentation_ButtonStep (id, image, text, position, top, left, width, height, previousInputViews) {
+  presentation_Step.call (this, id, image, text, position, top, left, width, height, previousInputViews);
 }
 
 /*
@@ -370,7 +474,8 @@ function presentation_parseButtonStep (presentationPath, element) {
     $('> top',      element).text (),
     $('> left',     element).text (),
     $('> width',    element).text (),
-    $('> height',   element).text ()
+    $('> height',   element).text (),
+    presentation_parsePreviousInputViews (presentationPath, $('> previousInputViews', element))
   );
 }
 ```
@@ -382,7 +487,7 @@ The Input Step Class
 
 ```javascript
 /*
-  Accepts ten arguments:
+  Accepts eleven arguments:
 
   * id, an Presentation Step ID string
   * image, a URL string
@@ -394,6 +499,8 @@ The Input Step Class
   * left, a CSS Dimension string
   * width, a CSS Dimension string
   * height, a CSS Dimension string
+  * and previousInputViews, a
+    presentation_PreviousInputView array
   * expression, a RegEx string
   * errorAlert, an HTML string
 
@@ -405,8 +512,8 @@ The Input Step Class
   when they submit invalid input. See
   presentation_Step for more details.
 */
-function presentation_InputStep (id, image, text, position, top, left, width, height, expression, errorAlert) {
-  presentation_Step.call (this, id, image, text, position, top, left, width, height);
+function presentation_InputStep (id, image, text, position, top, left, width, height, previousInputViews, expression, errorAlert) {
+  presentation_Step.call (this, id, image, text, position, top, left, width, height, previousInputViews);
   this.expression = expression;
   this.errorAlert = errorAlert;
 }
@@ -457,6 +564,7 @@ function presentation_parseInputStep (presentationPath, element) {
     $('> left',         element).text (),
     $('> width',        element).text (),
     $('> height',       element).text (),
+    presentation_parsePreviousInputViews (presentationPath, $('> previousInputViews', element)),
     $('> expression',   element).text (),
     $('> errorAlert',   element).text ()
   );
@@ -470,7 +578,7 @@ The Quiz Step Class
 
 ```javascript
 /*
-  presentation_QuizStep accepts eight arguments:
+  presentation_QuizStep accepts nine arguments:
 
   * id, an HTML ID string
   * text, an HTML string
@@ -479,6 +587,8 @@ The Quiz Step Class
   * left, a CSS Length string
   * width, a CSS Length string
   * height, a CSS Length string
+  * previousInputViews, a
+    presentation_PreviousInputView array
   * and options an Options array
 
   and returns a new presentation_QuizStep object.
@@ -487,8 +597,8 @@ The Quiz Step Class
 
     {label: <string>, isCorrect: <bool>, onSelect: <string>}
 */
-function presentation_QuizStep (id, image, text, position, top, left, width, height, options) {
-  presentation_Step.call (this, id, image, text, position, top, left, width, height);
+function presentation_QuizStep (id, image, text, position, top, left, width, height, previousInputViews, options) {
+  presentation_Step.call (this, id, image, text, position, top, left, width, height, previousInputViews);
   this.options = options;
 }
 
@@ -553,6 +663,7 @@ function presentation_parseQuizStep (presentationPath, element) {
     $('> left',         element).text (),
     $('> width',        element).text (),
     $('> height',       element).text (),
+    presentation_parsePreviousInputViews (presentationPath, $('> previousInputViews', element)),
     $('> options', element).children ('option').map (
       function (i, optionElement) {
         return {
@@ -716,10 +827,132 @@ function presentation_loadDatabase (url, done) {
 }
 ```
 
+The Previous Input View Instance Class
+--------------------------------------
+
+The <code>presentation_PreviousInputViewInstance</code> class represent Previous Input Views that are actually represented by HTML elements in a presentation. These class objects act as interfaces to these views tracking thier states and controlling their representations.
+
+```javascript
+/*
+  Accepts two arguments:
+
+  * stepInstance, a presentation_StepInstance
+  * and previousInputView, a
+  presentation_PreviousInputView
+
+  and returns a
+  presentation_PreviousInputViewInstance that
+  represents an instance of previousInputView
+  tied to stepInstance.
+*/
+function presentation_PreviousInputViewInstance (stepInstance, previousInputView) {
+  this.stepInstance       = stepInstance;
+  this.previousInputView  = previousInputView;
+  this._element           = null;
+  this._inputStepInstance = null;
+}
+
+/*
+  Accepts no arguments and returns the
+  Presentation Input Step associated with this
+  view as a presentation_InputStepInstance.
+
+  If the referenced Input Step Instance does
+  not exist, this function returns null.
+*/
+presentation_PreviousInputViewInstance.prototype.getInputStepInstance = function () {
+  if (this._inputStepInstance) { return this._inputStepInstance; }
+
+  var stepInstance = this.stepInstance.presentationInstance.getStepInstance (this.previousInputView.inputStepId);
+  this._inputStepInstance = stepInstance && stepInstance instanceof presentation_InputStepInstance ?
+    stepInstance : null;
+
+  return this._inputStepInstance;
+}
+
+/*
+  Accepts no arguments and returns the value
+  entered into the Presentation Input Step
+  associated with this view as a string.
+*/
+presentation_PreviousInputViewInstance.prototype.getInputStepInstanceValue = function () {
+  var inputStepInstance = this.getInputStepInstance ();
+  return inputStepInstance ?
+    $('> input', inputStepInstance.getFocusElement ()).val () :
+    null;
+}
+
+/*
+  Accepts no arguments and returns a HTML
+  element that represents this view as a JQuery
+  HTML Element.
+
+  Note: the element returned by this function
+  does not display the input entered into the
+  Presentation Input Step associated with this
+  view. Use the `show ()` function to update
+  the display.
+*/
+presentation_PreviousInputViewInstance.prototype._createElement = function () {
+  var inputStepInstance = this.getInputStepInstance ();
+  return inputStepInstance ?
+    $('<div></div>')
+      .addClass ('presentation_previous_input_view')
+      .attr ('data-presentation-step', this.stepInstance.step.id)
+      .attr ('data-presentation-input-step', inputStepInstance.step.id)
+      .attr ('tabindex', -1)
+      .css ('position', 'absolute')
+      .css ('top',      this.previousInputView.top)
+      .css ('left',     this.previousInputView.left)
+      .css ('width',    this.previousInputView.width)
+      .css ('height',   this.previousInputView.height)
+    : null;
+}
+
+/*
+  Accepts no arguments and returns the HTML
+  element that represents this view as a JQuery
+  HTML Element.
+
+  Note: the element returned by this function
+  may no display the input entered into the
+  Presentation Input Step associated with this
+  view. Use the `show ()` function to update
+  the element.
+*/
+presentation_PreviousInputViewInstance.prototype.getElement = function () {
+  this._element = this._element || this._createElement ();
+  return this._element;
+}
+
+/*
+  Accepts no arguments and displays and updates
+  this view instance's element.
+*/
+presentation_PreviousInputViewInstance.prototype.show = function () {
+  var element = this.getElement ();
+  if (!element) { return; }
+
+  var value = this.getInputStepInstanceValue ();
+  if (value === null) { return; }
+
+  element.text (value).addClass ('presentation_visible').show ();
+}
+
+/*
+  Accepts no arguments and hides this view
+  instance's element.
+*/
+presentation_PreviousInputViewInstance.prototype.hide = function () {
+  var element = this.getElement ();
+  element && element.removeClass ('presentation_visible').hide ();
+}
+```
+
 The Step Instance Class
 -----------------------
 
-The <code>presentation_StepInstance</code> represents the abstract base class for the step instance classes. Every step instance is a concrete representation of a step described in the Presentation Database.
+The <code>presentation_StepInstance</code> class represents the abstract base class for the step instance classes. Every step instance is a concrete representation of a step described in the Presentation Database.
 
 ```javascript
 /*
@@ -736,11 +969,12 @@ The <code>presentation_StepInstance</code> represents the abstract base class fo
   presentationInstance's presentation's steps.
 */
 function presentation_StepInstance (step, presentationInstance) {
-  this.step                 = step;
-  this.presentationInstance = presentationInstance;
-  this.completed            = false;
-  this.spoken               = false;
-  this.message              = null;
+  this.step                        = step;
+  this.presentationInstance        = presentationInstance;
+  this.completed                   = false;
+  this.spoken                      = false;
+  this.message                     = null;
+  this._previousInputViewInstances = null;
 }
 
 /*
@@ -775,7 +1009,9 @@ presentation_StepInstance.prototype.onComplete = function () {
   This function is be called when IntroJS
   highlights this step instance.
 */
-presentation_StepInstance.prototype.onHighlight = function () {}
+presentation_StepInstance.prototype.onHighlight = function () {
+  this.showPreviousInputViewInstances ();
+}
 
 /*
   Accepts no arguments an updates this step
@@ -784,7 +1020,9 @@ presentation_StepInstance.prototype.onHighlight = function () {}
   This function is called when IntroJS
   unhighlights this step instance.
 */
-presentation_StepInstance.prototype.onUnhighlight = function () {}
+presentation_StepInstance.prototype.onUnhighlight = function () {
+  this.hidePreviousInputViewInstances ();
+}
 
 /*
   Accepts no arguments and returns a JQuery HTML
@@ -811,6 +1049,59 @@ presentation_StepInstance.prototype._createFocusElement = function () {
 presentation_StepInstance.prototype.getFocusElement = function () {
   this._focusElement = this._focusElement || this._createFocusElement ();
   return this._focusElement;
+}
+
+/*
+  Accepts no arguments and returns a set of
+  Previous Input View Instances that instantiate
+  the views associated with this step instance's
+  step as a presentation_PreviousInputViewInstance
+  array.
+*/
+presentation_StepInstance.prototype._createPreviousInputViewInstances = function () {
+  var previousInputViewInstances = [];
+  for (var i = 0; i < this.step.previousInputViews.length; i ++) {
+    var previousInputView = this.step.previousInputViews [i];
+    previousInputViewInstances.push (new presentation_PreviousInputViewInstance (this, previousInputView));
+  }
+  return previousInputViewInstances;
+}
+
+/*
+  Accepts no arguments and returns the set of
+  Previous Input View Instances associated
+  with this step instance as an array of
+  presentation_StepInstances.
+*/
+presentation_StepInstance.prototype.getPreviousInputViewInstances = function () {
+  this._previousInputViewInstances = this._previousInputViewInstances || this._createPreviousInputViewInstances ();
+  return this._previousInputViewInstances;
+}
+
+/*
+  Accepts no arguments and updates and shows the
+  Previous Input View Instances associated with
+  this step instance.
+*/
+presentation_StepInstance.prototype.showPreviousInputViewInstances = function () {
+  var previousInputViewInstances = this.getPreviousInputViewInstances ();
+  for (var i = 0; i < previousInputViewInstances.length; i ++) {
+    var previousInputViewInstance = previousInputViewInstances [i];
+    previousInputViewInstance.show ();
+  }
+}
+
+/*
+  Accepts no arguments and hides the Previous
+  Input View Instances associated with this
+  step instance.
+*/
+presentation_StepInstance.prototype.hidePreviousInputViewInstances = function () {
+  var previousInputViewInstances = this.getPreviousInputViewInstances ();
+  for (var i = 0; i < previousInputViewInstances.length; i ++) {
+    var previousInputViewInstance = previousInputViewInstances [i];
+    previousInputViewInstance.hide ();
+  }
 }
 ```
 
@@ -853,6 +1144,7 @@ presentation_BlankStepInstance.prototype.constructor = presentation_BlankStepIns
   this step instance.
 */
 presentation_BlankStepInstance.prototype.onHighlight = function () {
+  presentation_StepInstance.prototype.onHighlight.call (this);
   this.onComplete ();
 }
 
@@ -921,6 +1213,7 @@ presentation_ButtonStepInstance.prototype.onComplete = function () {
   highlights this step instance.
 */
 presentation_ButtonStepInstance.prototype.onHighlight = function () {
+  presentation_StepInstance.prototype.onHighlight.call (this);
   this.getFocusElement ().attr ('tabindex', 0);
 }
 
@@ -932,6 +1225,7 @@ presentation_ButtonStepInstance.prototype.onHighlight = function () {
   unhighlights this step instance.
 */
 presentation_ButtonStepInstance.prototype.onUnhighlight = function () {
+  presentation_StepInstance.prototype.onUnhighlight.call (this);
   this.getFocusElement ().attr ('tabindex', -1);
 }
 
@@ -994,6 +1288,7 @@ presentation_InputStepInstance.prototype.constructor = presentation_InputStepIns
   highlights this step instance.
 */
 presentation_InputStepInstance.prototype.onHighlight = function () {
+  presentation_StepInstance.prototype.onHighlight.call (this);
   var input = $('input', this.getFocusElement ()).attr ('tabindex', 0).val ();
   input && (this.checkInput (input) || $('.presentation_error_message', this.presentationInstance.element).html (this.step.errorAlert).show ());
 }
@@ -1007,6 +1302,7 @@ presentation_InputStepInstance.prototype.onHighlight = function () {
   unhighlights this step instance.
 */
 presentation_InputStepInstance.prototype.onUnhighlight = function () {
+  presentation_StepInstance.prototype.onUnhighlight.call (this);
   var input = $('input', this.getFocusElement ()).attr ('tabindex', -1).val ();
 }
 
@@ -1266,6 +1562,24 @@ presentation_PresentationInstance.prototype.getStepInstances = function () {
 }
 
 /*
+  Accepts one argument: stepId, a Presentation
+  Step ID string; and returns the Presentation
+  Step Instance that instantiates the referenced
+  step in this presentation instance as a
+  presentation_StepInstance.
+*/
+presentation_PresentationInstance.prototype.getStepInstance = function (stepId) {
+  var stepInstances = this.getStepInstances ();
+  for (var i = 0; i < stepInstances.length; i ++) {
+    var stepInstance = stepInstances [i];
+    if (stepInstance.step.id === stepId) {
+      return stepInstance;
+    }
+  }
+  return null;
+}
+
+/*
   Accepts no arguments and returns an HTML
   element that represents this presentation as
   a JQuery HTML Element.
@@ -1285,14 +1599,6 @@ presentation_PresentationInstance.prototype._createElement = function () {
     .css ('position',          'relative')
     .append (presentation_createOverlayInsetElement (label, icon))
     .append (presentation_createOverlayElement ())
-    .append (this.getStepInstances ().map (
-        function (stepInstance) {
-          return stepInstance.getFocusElement ()
-            .css ('background-image',    'url(' + stepInstance.step.image + ')')
-            .css ('background-position', '-' + stepInstance.step.left + ' -' + stepInstance.step.top)
-            .css ('background-size',     self.presentation.getWidth () + ', ' + self.presentation.getHeight ())
-            .css ('background-repeat',   'no-repeat');
-      }))
     .click (
         function () {
           if (!self.running ()) {
@@ -1300,9 +1606,26 @@ presentation_PresentationInstance.prototype._createElement = function () {
             presentationElement.addClass ('presentation_active');
             $('.presentation_overlay_inset', presentationElement).remove ();
             $('.presentation_overlay', presentationElement).remove ();
-            self.getCurrentStepInstance ().onHighlight ();
           }
       });
+
+  this.getStepInstances ().forEach (
+    function (stepInstance) {
+      presentationElement.append (
+        stepInstance.getFocusElement ()
+          .css ('background-image',    'url(' + stepInstance.step.image + ')')
+          .css ('background-position', '-' + stepInstance.step.left + ' -' + stepInstance.step.top)
+          .css ('background-size',     self.presentation.getWidth () + ', ' + self.presentation.getHeight ())
+          .css ('background-repeat',   'no-repeat')
+      );
+
+      presentationElement.append (
+        stepInstance.getPreviousInputViewInstances ().map (
+          function (previousInputViewInstance) {
+            return previousInputViewInstance.getElement ();
+      }));
+  });
+
   return presentationElement;
 }
 
@@ -1551,6 +1874,7 @@ presentation_PresentationInstance.prototype._createIntro = function () {
 
           presentationElement.css ('background-image', 'url(' + self.presentation.getImage () + ')');
           presentationElement.removeClass ('presentation_active');
+          $('.presentation_visible').removeClass ('presentation_visible');
           $('.introjs-tooltip').remove ();
 
           presentationElement
@@ -1783,7 +2107,7 @@ presentation_punctuate = function (htmlTranscript) {
   synthesizer.
 */
 presentation_speak = function (htmlTranscript) {
-  responsiveVoice && responsiveVoice.speak (presentation_punctuate (htmlTranscript));
+  responsiveVoice && responsiveVoice.speak (presentation_punctuate (htmlTranscript), 'UK English Male');
 }
 ```
 
@@ -1800,10 +2124,10 @@ To be considered valid, the Presentation Database XML file must conform to the f
     <xs:complexType>
       <xs:sequence>
         <xs:element name="presentation" type="presentationType" minOccurs="0" maxOccurs="unbounded">
-          <xs:unique name="uniquePresentationName">
+          <xs:key name="uniquePresentationName">
             <xs:selector xpath="presentation"/>
             <xs:field xpath="@name"/>
-          </xs:unique>
+          </xs:key>
         </xs:element>
       </xs:sequence>
     </xs:complexType>
@@ -1829,10 +2153,10 @@ To be considered valid, the Presentation Database XML file must conform to the f
         </xs:simpleType>
       </xs:element>
       <xs:element name="steps" type="stepsType" minOccurs="1" maxOccurs="1">
-        <xs:unique name="uniqueStepName">
-          <xs:selector xpath="blankStep|inputStep"/>
+        <xs:key name="uniqueStepName">
+          <xs:selector xpath="blankStep|buttonStep|inputStep|testStep"/>
           <xs:field xpath="name"/>
-        </xs:unique>
+        </xs:key>
       </xs:element>
     </xs:all>
   </xs:complexType>
@@ -1857,9 +2181,11 @@ To be considered valid, the Presentation Database XML file must conform to the f
         <xs:simpleType>
           <xs:restriction base="xs:string">
             <xs:enumeration value="bottom"/>
+            <xs:enumeration value="floating"/>
             <xs:enumeration value="left"/>
             <xs:enumeration value="right"/>
             <xs:enumeration value="top"/>
+            <xs:enumeration value="top-middle-aligned"/>
           </xs:restriction>
         </xs:simpleType>
       </xs:element>
@@ -1890,6 +2216,18 @@ To be considered valid, the Presentation Database XML file must conform to the f
             <xs:pattern value="[0-9]+px"/>
           </xs:restriction>
         </xs:simpleType>
+      </xs:element>
+      <xs:element name="previousInputViews" minOccurs="1" maxOccurs="1">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="previousInputView" type="previousInputViewType" minOccurs="0" maxOccurs="unbounded">
+              <xs:keyref name="previousInputViewInputStepId" refer="uniqueStepName">
+                <xs:selector xpath="inputStep"/>
+                <xs:field xpath="@name"/>
+              </xs:keyref>
+            </xs:element>
+          </xs:sequence>
+        </xs:complexType>
       </xs:element>
     </xs:sequence>
   </xs:complexType>
@@ -1938,6 +2276,41 @@ To be considered valid, the Presentation Database XML file must conform to the f
       </xs:element>
     </xs:sequence>
   </xs:complexType>
+
+  <!-- Defines the Previous Input View element type. -->
+  <xs:complexType name="previousInputViewType">
+    <xs:sequence>
+      <xs:element name="inputStepName" type="xs:string" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="top" minOccurs="1" maxOccurs="1">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]+px"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="left" minOccurs="1" maxOccurs="1">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]+px"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="width" minOccurs="1" maxOccurs="1">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]+px"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="height" minOccurs="1" maxOccurs="1">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]+px"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
 </xs:schema>
 ```
 
@@ -1967,6 +2340,7 @@ An example Presentation Database can be found in [database.xml.example](#An Exam
         <left>500px</left>
         <width>0px</width>
         <height>0px</height>
+        <previousInputViews/>
       </blankStep>
       <inputStep>
         <name>3_type_a_manufacturer_part_number</name>
@@ -1981,6 +2355,7 @@ An example Presentation Database can be found in [database.xml.example](#An Exam
         <left>128px</left>
         <width>160px</width>
         <height>21px</height>
+        <previousInputViews/>
         <expression><![CDATA[^[a-zA-Z0-9]{1,40}$]]></expression>
         <errorAlert>ERROR: There is a 40 character limit and only alphanumeric characters are allowed.</errorAlert>
       </inputStep>
@@ -1996,6 +2371,15 @@ An example Presentation Database can be found in [database.xml.example](#An Exam
         <left>414px</left>
         <width>147px</width>
         <height>21px</height>
+        <previousInputViews>
+          <previousInputView>
+            <inputStepName>3_type_a_manufacturer_part_number</inputStepName>
+            <top>232px</top>
+            <left>128px</left>
+            <width>160px</width>
+            <height>21px</height>
+          </previousInputView>
+        </previousInputViews>
       </buttonStep>
       <testStep>
         <name>12_test_your_knowledge</name>
@@ -2009,6 +2393,7 @@ An example Presentation Database can be found in [database.xml.example](#An Exam
         <left>327px</left>
         <width>330px</width>
         <height>134px</height>
+        <previousInputViews/>
         <options>
           <option>
             <label><![CDATA[True]]></label>
@@ -2053,6 +2438,8 @@ _"The Load Event Handler"
 
 _"The Block Handlers"
 
+_"The Previous Input View Class"
+
 _"The Step Class"
 
 _"The Blank Step Class"
@@ -2066,6 +2453,8 @@ _"The Quiz Step Class"
 _"The Presentation Class"
 
 _"The Database Class"
+
+_"The Previous Input View Instance Class"
 
 _"The Step Instance Class"
 
