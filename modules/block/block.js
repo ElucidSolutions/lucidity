@@ -132,6 +132,13 @@ function block_expandDocumentBlocks (id, done) {
   If either context or context.element is undefined
   or null, block_expandBlock calls done.
 
+  If context.element is a Quote block
+  (i.e. context.element has a block_quote_block
+  class attribute), this function removes the
+  block_quote_block class attribute and calls
+  done without expanding any blocks nested
+  within context.element.
+
   If none of the handlers can be applied to
   context.element, block_expandPageBlock simply
   calls done.
@@ -159,6 +166,12 @@ function block_expandBlock (context, done) {
   if (!context || !context.element) { return done (); }
 
   var id = context.getId ();
+
+  // Handle Quote blocks.
+  if (context.element.hasClass ('block_quote_block')) {
+    context.element.removeClass ('block_quote_block');
+    return done ();
+  }
 
   block_expandBlocks (id,
     block_getBlockElementsInElements (block_HANDLERS, context.element.children ()), 
@@ -256,11 +269,21 @@ function block_getBlockElementsInElements (handlers, elements) {
 */
 function block_getBlockElements (handlers, element) {
   var handler = block_getHandler (handlers, element);
-  if (handler) {
-    return [element];
-  }
+  return block_isBlockElement (handlers, element) ? [element] : block_getBlockElementsInElements (handlers, element.children ());
+}
 
-  return handler ? [element] : block_getBlockElementsInElements (handlers, element.children ());
+/*
+  block_isBlockElement accepts two arguments:
+
+  * handlers, a Handler Store
+  * and element, a JQuery Element.
+
+  and returns true if element is a block element
+  and false otherwise.
+*/
+function block_isBlockElement (handlers, element) {
+  var handler = block_getHandler (handlers, element);
+  return handler || element.hasClass ('block_quote_block');
 }
 
 /*

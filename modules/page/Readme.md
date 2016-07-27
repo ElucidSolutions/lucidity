@@ -322,7 +322,7 @@ The Page Block Handler
   will load the page referenced by this ID,
   replace the contents of context.element with
   the loaded page element; and pass the page
-  element to done.
+  null to done.
 
   If context.element is empty, this function will
   load the current page ID, replace the contents
@@ -353,6 +353,16 @@ The Page Block Handler
 */
 function page_block (context, done) {
   var element = context.element;
+  var id = context.element.text ().trim ();
+  if (id) {
+    return page_setPageElement (element, id,
+      function (error, pageElement) {
+        if (error) { return done (error); }
+
+        block_expandBlock (new block_Context (id, pageElement), done);
+    });
+  }
+
   PAGE_LOAD_HANDLERS.add (
     function (id, next) {
       if (!id) {
@@ -371,7 +381,7 @@ function page_block (context, done) {
       });
   });
 
-  var id = context.element.text () || context.getId ();
+  var id = context.getId ();
   if (!id) {
     element.empty ();
     return done (null);
