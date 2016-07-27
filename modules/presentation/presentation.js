@@ -16,6 +16,14 @@ var presentation_DATABASE = {};
 */
 var presentation_AUDIO = false;
 
+/*
+  An associative array of
+  presentation_PresentationInstance objects
+  representing the active presentation instances
+  keyed by Presentation Instance ID.
+*/
+var presentation_INSTANCES = {};
+
 // The module's load event handler.
 MODULE_LOAD_HANDLERS.add (
   function (done) {
@@ -43,10 +51,11 @@ MODULE_LOAD_HANDLERS.add (
             // V. Register the block handlers.
             block_HANDLERS.add ('presentation_block', presentation_block);
 
-            // VI. Cancel text to speech playback on page load.
+            // VI. Cancel text to speech playback and empty the presentation_INSTANCES array on page load.
             PAGE_LOAD_HANDLERS.add (
               function (id, done) {
                 responsiveVoice && responsiveVoice.cancel ();
+                presentation_INSTANCES = {};
                 done ();
             });
 
@@ -93,10 +102,13 @@ MODULE_LOAD_HANDLERS.add (
   presentation and calls done.
 */
 function presentation_block (context, done) {
-  var presentation = presentation_DATABASE.getPresentation (context.element.text ());
+  var presentationInstanceId = context.element.text ();
+  var presentation = presentation_DATABASE.getPresentation (presentationInstanceId);
   if (!presentation) { return done (null, null); }
 
   presentationInstance = new presentation_PresentationInstance (presentation);
+
+  presentation_INSTANCES [presentationInstanceId] = presentationInstance;
 
   PAGE_LOAD_HANDLERS.add (
     function (id, done) {
@@ -1437,6 +1449,13 @@ presentation_PresentationInstance.prototype._createElement = function () {
     .click (
         function () {
           if (!self.running ()) {
+            // Stop all other instances and remove their introJS elements.
+            // Note: IntroJS does not support multiple concurrent introJS instances. We need to remove any introJS elements associated with other instances before starting ours.
+            for (presentationInstanceId in presentation_INSTANCES) {
+              presentation_INSTANCES [presentationInstanceId] && presentation_INSTANCES [presentationInstanceId].exit ();
+            }
+
+            // Start this presentation instance.
             self.start ();
             presentationElement.addClass ('presentation_active');
             $('.presentation_overlay_inset', presentationElement).remove ();
@@ -1594,6 +1613,11 @@ presentation_PresentationInstance.prototype._createNavElement = function () {
             .attr ('tabindex', 0)
             .addClass ('presentation_nav_next')
             .addClass (stepInstances.length === 0 || stepInstances [0].completed ? '' : 'presentation_disabled')
+            .hover (function () {
+                if (!self.currentStepInstanceCompleted ()) {
+                  $(this).attr ('title', 'You must complete this step before continuing.');
+                }
+              })
             .keydown (function (event) {
                 event.keyCode === 13 && self.nextStep ();
               })
